@@ -24,6 +24,7 @@
 .scene-building.selected{z-index:3}
 .size-input-group{display:flex;align-items:center;gap:6px}.control-group .size-input-group input{width:56px;margin:0;padding:4px 5px;border:1px solid var(--line);border-radius:6px;background:#fff;text-align:center;font-size:10px}.size-input-group b{white-space:nowrap}
 .building-preview.off-scene{opacity:.58}.building-status{position:absolute;left:3px;bottom:3px;padding:2px 4px;border-radius:4px;background:#243d4dcc;color:#fff;font-size:8px}.building-actions{display:grid;gap:7px;margin-top:12px}.building-actions button{padding:8px;border:1px solid var(--line);border-radius:7px;background:#edf5f8;color:var(--ink);font-size:10px;cursor:pointer}.building-actions button.danger{border-color:#d8b7b2;background:#f8ecea;color:#8b3d35}
+.side-map-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.side-map-list.scrollable{max-height:196px;overflow-y:auto;padding-right:4px;align-content:start}.side-map{position:relative;display:block;min-width:0;padding:6px}.side-map img,.side-map .mini-built-in{display:block;width:100%;height:64px}.side-map>span:nth-child(2){display:block;margin-top:5px;padding:0 2px;font-size:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.side-map-delete{position:absolute;right:9px;top:9px}.side-map-list.scrollable::-webkit-scrollbar{width:6px}.side-map-list.scrollable::-webkit-scrollbar-thumb{border-radius:6px;background:#b8c4c8}
 
 </style>
   <style>
@@ -537,6 +538,6 @@
 </main>
 <div id="dropOverlay" class="drop-overlay" aria-hidden="true"><div><b id="dropTitle">松开上传地图</b><span id="dropDescription">拖到手机地图画布内可添加为建筑</span></div></div>
 <script src="./spine-player.js?v=20260730-2"></script>
-<script src="./app.js?v=20260730-20"></script>
+<script src="./app.js?v=20260730-21"></script>
 </body>
 </html>
