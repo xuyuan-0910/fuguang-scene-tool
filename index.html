@@ -19,6 +19,7 @@
 .drop-overlay{position:fixed;z-index:999;inset:16px;display:grid;place-items:center;border:3px dashed #fff;border-radius:22px;background:#16496be8;color:#fff;opacity:0;visibility:hidden;pointer-events:none;transition:opacity .15s,visibility .15s;backdrop-filter:blur(8px)}.is-dragging-map .drop-overlay{opacity:1;visibility:visible}.drop-overlay div{text-align:center;padding:30px}.drop-overlay b,.drop-overlay span{display:block}.drop-overlay b{font:700 clamp(26px,5vw,48px) "KaiTi",serif}.drop-overlay span{margin-top:12px;font-size:13px;color:#e4f2f8}
 .building-layer{position:absolute;z-index:2;inset:0;pointer-events:none}.scene-building{position:absolute;height:auto;transform:translate(-50%,-100%);filter:drop-shadow(0 7px 5px #172c2450);user-select:none}
 .building-panel-heading{display:flex;align-items:center;justify-content:space-between;font-size:12px;font-weight:700}.building-add{padding:7px 9px;border-radius:7px;background:var(--blue);color:#fff;font-size:10px;cursor:pointer}.building-add input{display:none}.building-list{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;margin-top:12px}.building-preview{position:relative;aspect-ratio:1;border:1px solid var(--line);border-radius:8px;background:#f2efe8;overflow:hidden}.building-preview img{width:100%;height:100%;object-fit:contain}.building-preview button{position:absolute;right:3px;top:3px;width:20px;height:20px;padding:0;border:0;border-radius:50%;background:#9d554de8;color:#fff;cursor:pointer;line-height:20px}.building-empty{grid-column:1/-1;margin:0;padding:14px 6px;border:1px dashed var(--line);border-radius:8px;text-align:center;color:var(--muted);font-size:10px}.building-help{margin:9px 0 0;color:var(--muted);font-size:9px;line-height:1.5}
+.explorer-layout{grid-template-columns:230px minmax(360px,1fr) 210px 250px}.building-panel .building-list{margin-top:0}@media(max-width:1180px){.explorer-layout{grid-template-columns:210px minmax(340px,1fr) 210px}.character-panel{display:none}}@media(max-width:720px){.explorer-layout{grid-template-columns:1fr}.building-panel{order:3}}
 
 </style>
   <style>
@@ -456,11 +457,6 @@
       <aside class="tool-panel map-panel">
         <div class="panel-heading"><h3>场景地图</h3><label>添加<input id="sideMapUpload" type="file" accept="image/*" multiple></label></div>
         <div id="sideMapList" class="side-map-list"></div>
-        <div class="control-group building-panel-section">
-          <div class="building-panel-heading"><span>场景建筑</span><label class="building-add">＋ 添加建筑<input id="buildingUpload" type="file" accept="image/*" multiple></label></div>
-          <div id="buildingList" class="building-list"></div>
-          <p class="building-help">点击添加后建筑会出现在地图中央，也可以直接把图片拖到地图上的指定位置。</p>
-        </div>
         <div class="control-group">
           <div class="control-title"><span>场景缩放</span><b id="zoomValue">140%</b></div>
           <div class="zoom-control"><button id="zoomOut" type="button">-</button><input id="zoomRange" type="range" min="60" max="1000" value="140"><button id="zoomIn" type="button">+</button></div>
@@ -499,6 +495,12 @@
         </div>
         <p class="stage-help">在地图任意位置按住并拖动即可移动角色，松手停止</p>
       </section>
+
+      <aside class="tool-panel building-panel">
+        <div class="panel-heading"><h3>场景建筑</h3><label>添加<input id="buildingUpload" type="file" accept="image/*" multiple></label></div>
+        <div id="buildingList" class="building-list"></div>
+        <p class="building-help">点击添加后建筑会出现在地图中央，也可以直接把图片拖到地图上的指定位置。</p>
+      </aside>
 
       <aside class="tool-panel character-panel">
         <div class="panel-heading"><h3>角色设置</h3><label>上传<input id="characterUpload" type="file" accept="image/*" multiple></label></div>
