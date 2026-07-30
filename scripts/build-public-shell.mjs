@@ -5,8 +5,8 @@ await mkdir(output, { recursive: true });
 
 let html = await readFile("public/index.html", "utf8");
 html = html
-  .replace('href="/styles.css"', 'href="./styles.css"')
-  .replace('src="/app.js"', 'src="./app.js"')
+  .replace('href="/styles.css"', 'href="./styles.css?v=20260730-2"')
+  .replace('src="/app.js"', 'src="./app.js?v=20260730-2"')
   .replaceAll('src="/hero-male.png"', 'src="./hero-male.png"')
   .replaceAll('src="/hero-female.png"', 'src="./hero-female.png"');
 
