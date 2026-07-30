@@ -6,5 +6,5 @@ for(const f of ['index.html','app.js','hero-male.png','hero-female.png','player.
 const css=(await readFile('app/globals.css','utf8')).replace('@import "tailwindcss";',''); await writeFile('dist/static/styles.css',css);
 await writeFile('docs/styles.css',css);
 await cp('.openai/hosting.json','dist/.openai/hosting.json');
-await writeFile('dist/server/index.js',`export default {async fetch(request,env){const u=new URL(request.url);if(u.pathname==='/')u.pathname='/index.html';if(env?.ASSETS?.fetch)return env.ASSETS.fetch(new Request(u,request));return new Response('Static asset binding unavailable',{status:503})}};`);
+await cp('worker/static-site.mjs','dist/server/index.js');
 console.log('Static Sites build complete');

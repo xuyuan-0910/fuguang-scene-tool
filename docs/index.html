@@ -5,17 +5,16 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
   <title>浮光造境 · 地图角色模拟器</title>
   <meta name="description" content="管理地图，并在手机画布中模拟角色移动">
-  <link rel="stylesheet" href="/styles.css">
+  <link rel="stylesheet" href="./styles.css?v=20260730-4">
 </head>
 <body>
 <main class="app-shell">
   <section id="homeView" class="home-view">
     <header class="home-header">
       <div class="brand-lockup"><span class="brand-mark">境</span><div><h1>浮光造境</h1><p>角色场景模拟器</p></div></div>
-      <label class="primary-action">上传地图<input id="homeMapUpload" type="file" accept="image/*" multiple></label>
     </header>
     <div class="home-intro">
-      <div><span class="eyebrow">我的场景</span><h2>选择一张地图开始探索</h2><p>地图保存在当前浏览器，刷新后仍可继续使用。点击缩略图进入地图浏览界面。</p></div>
+      <div><h2>选择一张地图开始探索</h2><p>地图保存在当前浏览器，刷新后仍可继续使用。点击缩略图进入地图浏览界面。</p></div>
       <div class="map-count"><b id="mapCount">1</b><span>张地图</span></div>
     </div>
     <section id="mapGallery" class="map-gallery" aria-label="地图列表"></section>
@@ -34,7 +33,7 @@
         <div id="sideMapList" class="side-map-list"></div>
         <div class="control-group">
           <div class="control-title"><span>场景缩放</span><b id="zoomValue">100%</b></div>
-          <input id="zoomRange" type="range" min="60" max="180" value="100">
+          <div class="zoom-control"><button id="zoomOut" type="button">-</button><input id="zoomRange" type="range" min="60" max="400" value="100"><button id="zoomIn" type="button">+</button></div>
         </div>
         <div class="control-group">
           <div class="control-title"><span>手机分辨率</span><b id="resolutionLabel">720 × 1280</b></div>
@@ -51,33 +50,35 @@
       <section class="stage-column">
         <div id="deviceFrame" class="device-frame">
           <div id="scene" class="scene">
+            <div id="sceneBackground" class="scene-background">
             <div id="builtIn" class="built-in-scene"><div class="sun"></div><div class="mountain back"></div><div class="mountain front"></div><div class="ground"></div><div class="path"></div></div>
-            <img id="stageCharacter" class="stage-character" src="/hero-male.png" alt="当前角色">
+            </div>
+            <img id="stageCharacter" class="stage-character" src="./hero-male.png" alt="当前角色">
             <div id="spineCharacter" class="stage-character spine-character" hidden><div id="spinePlayer"></div></div>
           </div>
           <div class="scene-hud"><span id="hudMapName">云隐山水</span><b>探索中</b></div>
           <div id="joystick" class="joystick" aria-label="角色移动摇杆"><div class="joystick-ring"></div><div id="knob" class="joystick-knob"></div></div>
         </div>
-        <p class="stage-help">拖动左下角摇杆移动角色，松手停止</p>
+        <p class="stage-help">在地图任意位置按住并拖动即可移动角色，松手停止</p>
       </section>
 
       <aside class="tool-panel character-panel">
         <div class="panel-heading"><h3>角色设置</h3><label>上传<input id="characterUpload" type="file" accept="image/*" multiple></label></div>
         <div id="characterList" class="character-list"></div>
         <div class="control-group">
-          <div class="control-title"><span>角色尺寸</span><b id="sizeValue">135 × 135</b></div>
-          <input id="characterSize" type="range" min="48" max="260" value="135">
+          <div class="control-title"><span>角色尺寸</span><b id="sizeValue">96 × 96</b></div>
+          <input id="characterSize" type="range" min="48" max="260" value="96">
         </div>
         <div class="coordinate-grid">
           <label>X 坐标<input id="posX" type="number" value="50" min="0" max="100"></label>
           <label>Y 坐标<input id="posY" type="number" value="68" min="0" max="100"></label>
         </div>
-        <div class="active-character-card"><img id="previewCharacter" src="/hero-male.png" alt=""><div><span>当前角色</span><b id="characterName">剑侠 · move-right</b></div></div>
+        <div class="active-character-card"><img id="previewCharacter" src="./hero-male.png" alt=""><div><span>当前角色</span><b id="characterName">剑侠 · move-right</b></div></div>
         <div class="tip-card"><b>移动提示</b><p>角色会沿摇杆方向持续移动，向左时自动翻转。</p></div>
       </aside>
     </div>
   </section>
 </main>
-<script src="/app.js"></script>
+<script src="./app.js?v=20260730-4"></script>
 </body>
 </html>
