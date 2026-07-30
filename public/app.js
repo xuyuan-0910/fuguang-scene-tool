@@ -127,6 +127,9 @@ function renderBuildings() {
   $("buildingLayer").innerHTML = map.buildings.map((building) =>
     `<img class="scene-building" src="${assetUrl(building)}" alt="" style="left:${building.x}%;top:${building.y}%;width:${building.size / state.width * 100}%">`
   ).join("");
+  $("buildingList").innerHTML = map.buildings.length ? map.buildings.map((building, index) =>
+    `<div class="building-preview"><img src="${assetUrl(building)}" alt="建筑 ${index + 1}"><button type="button" data-delete-building="${building.id}" title="删除建筑" aria-label="删除建筑 ${index + 1}">×</button></div>`
+  ).join("") : '<p class="building-empty">当前地图还没有建筑</p>';
 }
 
 function renderCamera() {
@@ -171,8 +174,6 @@ function renderExplorer() {
   $("devicePreset").value = `${state.width}x${state.height}`;
   $("posX").value = Math.round(state.x);
   $("posY").value = Math.round(state.y);
-  $("characterName").textContent = character.name;
-  $("previewCharacter").src = assetUrl(character);
   $("stageCharacter").src = assetUrl(character);
   $("stageCharacter").hidden = character.spine && spineReady;
   $("spineCharacter").hidden = !character.spine || !spineReady;
@@ -247,12 +248,9 @@ async function importMaps(fileList) {
   renderGallery(); renderSideMaps();
 }
 
-async function importBuildings(fileList, clientX, clientY) {
+async function addBuildingsAt(fileList, baseX, baseY) {
   const map = currentMap();
   map.buildings ??= [];
-  const rect = $("sceneBackground").getBoundingClientRect();
-  const baseX = clamp((clientX - rect.left) / rect.width * 100, 0, 100);
-  const baseY = clamp((clientY - rect.top) / rect.height * 100, 0, 100);
   let added = 0;
   for (const file of [...(fileList || [])]) {
     if (file.size > MAX_UPLOAD_BYTES) {
@@ -262,6 +260,7 @@ async function importBuildings(fileList, clientX, clientY) {
     const info = await imageInfo(file);
     map.buildings.push({
       id: `building-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+      name: file.name.replace(/\.[^.]+$/, ""),
       blob: file,
       width: info.width,
       height: info.height,
@@ -275,6 +274,23 @@ async function importBuildings(fileList, clientX, clientY) {
     dbWrite("maps", map);
     renderExplorer();
   }
+}
+
+async function importBuildings(fileList, clientX, clientY) {
+  const rect = $("sceneBackground").getBoundingClientRect();
+  const x = clamp((clientX - rect.left) / rect.width * 100, 0, 100);
+  const y = clamp((clientY - rect.top) / rect.height * 100, 0, 100);
+  await addBuildingsAt(fileList, x, y);
+}
+
+function deleteBuilding(id) {
+  const map = currentMap();
+  const building = map.buildings?.find((item) => item.id === id);
+  if (!building) return;
+  if (building.src?.startsWith("blob:")) URL.revokeObjectURL(building.src);
+  map.buildings = map.buildings.filter((item) => item.id !== id);
+  dbWrite("maps", map);
+  renderExplorer();
 }
 
 async function importCharacters(fileList) {
@@ -334,6 +350,8 @@ function bindEvents() {
   $("sideMapList").onclick = (event) => { const remove = event.target.closest("[data-delete-map]"); if (remove) { event.stopPropagation(); deleteMap(remove.dataset.deleteMap); return; } const card = event.target.closest("[data-map-id]"); if (card) { state.mapId = card.dataset.mapId; renderExplorer(); } };
   $("characterList").onclick = (event) => { const card = event.target.closest("[data-character-id]"); if (card) { state.characterId = card.dataset.characterId; renderExplorer(); } };
   $("sideMapUpload").onchange = async (event) => { await importMaps(event.target.files); state.mapId = state.maps.at(-1).id; renderExplorer(); };
+  $("buildingUpload").onchange = async (event) => { await addBuildingsAt(event.target.files, 50, 72); event.target.value = ""; };
+  $("buildingList").onclick = (event) => { const remove = event.target.closest("[data-delete-building]"); if (remove) deleteBuilding(remove.dataset.deleteBuilding); };
   $("characterUpload").onchange = (event) => importCharacters(event.target.files);
   $("backHome").onclick = goHome;
   $("resetScene").onclick = () => { state.x = 50; state.y = 68; setSceneZoom(currentMap().fit === "contain" ? 100 : 140); };

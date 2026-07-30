@@ -32,6 +32,11 @@
       <aside class="tool-panel map-panel">
         <div class="panel-heading"><h3>场景地图</h3><label>添加<input id="sideMapUpload" type="file" accept="image/*" multiple></label></div>
         <div id="sideMapList" class="side-map-list"></div>
+        <div class="control-group building-panel-section">
+          <div class="building-panel-heading"><span>场景建筑</span><label class="building-add">＋ 添加建筑<input id="buildingUpload" type="file" accept="image/*" multiple></label></div>
+          <div id="buildingList" class="building-list"></div>
+          <p class="building-help">点击添加后建筑会出现在地图中央，也可以直接把图片拖到地图上的指定位置。</p>
+        </div>
         <div class="control-group">
           <div class="control-title"><span>场景缩放</span><b id="zoomValue">140%</b></div>
           <div class="zoom-control"><button id="zoomOut" type="button">-</button><input id="zoomRange" type="range" min="60" max="1000" value="140"><button id="zoomIn" type="button">+</button></div>
@@ -86,7 +91,6 @@
           <label>X 坐标<input id="posX" type="number" value="50" min="0" max="100"></label>
           <label>Y 坐标<input id="posY" type="number" value="68" min="0" max="100"></label>
         </div>
-        <div class="active-character-card"><img id="previewCharacter" src="./hero-male.png" alt=""><div><span>当前角色</span><b id="characterName">剑侠</b></div></div>
         <div class="tip-card"><b>移动提示</b><p>角色会沿摇杆方向持续移动，向左时自动翻转。</p></div>
       </aside>
     </div>
@@ -94,6 +98,6 @@
 </main>
 <div id="dropOverlay" class="drop-overlay" aria-hidden="true"><div><b id="dropTitle">松开上传地图</b><span id="dropDescription">拖到手机地图画布内可添加为建筑</span></div></div>
 <script src="./spine-player.js?v=20260730-2"></script>
-<script src="./app.js?v=20260730-14"></script>
+<script src="./app.js?v=20260730-15"></script>
 </body>
 </html>
