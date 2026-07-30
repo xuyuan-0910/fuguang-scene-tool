@@ -5,8 +5,8 @@ await mkdir(output, { recursive: true });
 
 let html = await readFile("public/index.html", "utf8");
 html = html
-  .replace('href="/styles.css"', 'href="./styles.css?v=20260730-2"')
-  .replace('src="/app.js"', 'src="./app.js?v=20260730-2"')
+  .replace('href="/styles.css"', 'href="./styles.css?v=20260730-3"')
+  .replace('src="/app.js"', 'src="./app.js?v=20260730-3"')
   .replaceAll('src="/hero-male.png"', 'src="./hero-male.png"')
   .replaceAll('src="/hero-female.png"', 'src="./hero-female.png"');
 
@@ -15,7 +15,11 @@ js = js
   .replaceAll("'/hero-male.png'", "'./hero-male.png'")
   .replaceAll("'/hero-female.png'", "'./hero-female.png'")
   .replaceAll("'/player.skel'", "'./player.skel'")
-  .replaceAll("'/player.atlas'", "'./player.atlas'");
+  .replaceAll("'/player.atlas'", "'./player.atlas'")
+  .replaceAll('"/hero-male.png"', '"./hero-male.png"')
+  .replaceAll('"/hero-female.png"', '"./hero-female.png"')
+  .replaceAll('"/player.skel"', '"./player.skel"')
+  .replaceAll('"/player.atlas"', '"./player.atlas"');
 
 let css = await readFile("app/globals.css", "utf8");
 css = css.replace("url('/8dc458cc-bc1e-4a18-a9da-45372ae547fe.png')", "url('./8dc458cc-bc1e-4a18-a9da-45372ae547fe.png')");

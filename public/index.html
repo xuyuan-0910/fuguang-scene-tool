@@ -2,72 +2,81 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
-  <title>浮光造境 · 角色场景模拟器</title>
-  <meta name="description" content="上传地图与角色，在手机画布中模拟移动和缩放">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <title>浮光造境 · 地图角色模拟器</title>
+  <meta name="description" content="管理地图，并在手机画布中模拟角色移动">
   <link rel="stylesheet" href="/styles.css">
 </head>
 <body>
 <main class="app-shell">
-  <section class="workspace" id="workspace">
-    <div class="left-column">
-      <header class="paper-card intro-card">
-        <div class="ink-heading"><h1>境</h1><span class="cloud-mark">〰</span></div>
-        <div class="mist-line"></div>
-        <div class="intro-row">
-          <div><strong>浮光造境角色场景模拟器</strong><p>素材仅保存在本机</p></div>
-          <div class="top-actions"><button class="ghost-button" id="reset">重置场景</button><button class="ghost-button" id="preview">沉浸预览</button></div>
-        </div>
-        <div class="panel-tabs"><button class="active" data-tab="assets">素材库</button><button data-tab="device">画布</button></div>
-        <p class="section-caption">场景素材</p>
-      </header>
-
-      <section class="paper-card asset-section" id="assetsPanel">
-        <div class="ink-heading small"><h2>地图</h2><span class="cloud-mark">〰</span></div>
-        <div class="file-row"><label class="file-button">＋ 上传<input id="sceneUploadTop" type="file" accept="image/*" multiple></label><span>选择地图图片，素材不会上传到服务器</span></div>
-        <div class="asset-grid" id="sceneList">
-          <button class="asset-card empty-scene selected" data-scene="default"><span class="scene-pattern"></span><b>演示场景 · 内置山水</b><small>默认地图</small></button>
-          <label class="asset-card upload-card"><span>＋</span><b>添加地图</b><small>PNG / JPG / WEBP</small><input id="sceneUpload" type="file" accept="image/*" multiple></label>
-        </div>
-      </section>
-
-      <section class="paper-card character-section">
-        <div class="ink-heading small"><h2>人物</h2><span class="cloud-mark">〰</span></div>
-        <div class="file-row"><label class="file-button">＋ 上传<input id="characterUploadTop" type="file" accept="image/*" multiple></label><span>选择角色图或继续使用 Spine 角色</span></div>
-        <div class="character-list" id="characterList"></div>
-        <div id="devicePanel" hidden>
-          <div class="preset-list" id="presetList"></div>
-          <div class="custom-size"><button>−</button><label><input id="customWidth" type="number" value="720" aria-label="画布宽度"></label><span>×</span><label><input id="customHeight" type="number" value="1280" aria-label="画布高度"></label><button id="applySize">＋</button></div>
-        </div>
-      </section>
-
-      <section class="paper-card simulator-card">
-        <div class="simulator-head"><div class="ink-heading small"><h2>地图预览</h2><span class="cloud-mark">〰</span></div><span id="resolutionLabel">720 × 1280</span></div>
-        <div class="device-frame" id="deviceFrame">
-          <div class="scene" id="scene">
-            <div class="built-in-scene" id="builtIn"><div class="sun"></div><div class="mountain back"></div><div class="mountain front"></div><div class="cloud cloud-one"></div><div class="cloud cloud-two"></div><div class="ground"></div><div class="path"></div></div>
-            <img class="stage-character" id="stageCharacter" src="/hero-male.png" alt="当前角色">
-          </div>
-          <div class="hud"><span>云隐村</span><b>探索中</b></div>
-          <div class="joystick" id="joystick" aria-label="角色移动摇杆"><div class="joystick-ring"></div><div class="joystick-knob" id="knob"></div></div>
-        </div>
-        <div class="map-status"><span>拖动摇杆探索场景</span><span>当前对象</span></div>
-        <div class="zoom-dock"><span>近</span><input id="zoomDock" aria-label="场景远近缩放" type="range" min="60" max="180" value="100"><span>远</span><b id="zoomDockValue">100%</b></div>
-      </section>
+  <section id="homeView" class="home-view">
+    <header class="home-header">
+      <div class="brand-lockup"><span class="brand-mark">境</span><div><h1>浮光造境</h1><p>角色场景模拟器</p></div></div>
+      <label class="primary-action">上传地图<input id="homeMapUpload" type="file" accept="image/*" multiple></label>
+    </header>
+    <div class="home-intro">
+      <div><span class="eyebrow">我的场景</span><h2>选择一张地图开始探索</h2><p>地图保存在当前浏览器，刷新后仍可继续使用。点击缩略图进入地图浏览界面。</p></div>
+      <div class="map-count"><b id="mapCount">1</b><span>张地图</span></div>
     </div>
-
-    <aside class="paper-card right-panel">
-      <div class="ink-heading"><h2>角色属性</h2><span class="cloud-mark">〰</span></div>
-      <span class="live-chip">实时</span>
-      <div class="character-preview"><img id="previewCharacter" src="/hero-male.png" alt=""><div><b id="characterName">剑侠 · move-right</b><small>角色图层</small></div></div>
-      <div class="control-block"><div class="control-label"><span>角色尺寸</span><b id="sizeValue">135 × 135</b></div><input id="characterSize" type="range" min="48" max="260" value="135"><div class="range-labels"><span>48 px</span><span>260 px</span></div></div>
-      <div class="control-block"><div class="control-label"><span>场景缩放</span><b id="zoomValue">100%</b></div><input id="zoomRange" type="range" min="60" max="180" value="100"></div>
-      <div class="coordinate-grid"><label>X 坐标<input id="posX" type="number" value="50"></label><label>Y 坐标<input id="posY" type="number" value="68"></label></div>
-      <div class="tips"><b>移动提示</b><p>拖动画面左下角摇杆，角色会沿任意方向持续移动。</p><p>松手即可停止。</p></div>
-      <label class="big-upload">上传新角色<input id="characterUpload" type="file" accept="image/*" multiple><span>选择文件</span><small>PNG / JPG / WEBP</small></label>
-    </aside>
+    <section id="mapGallery" class="map-gallery" aria-label="地图列表"></section>
   </section>
-  <footer>所有素材仅存储在本地设备中，不会上传至服务器</footer>
+
+  <section id="explorerView" class="explorer-view" hidden>
+    <header class="explorer-topbar">
+      <button id="backHome" class="back-button">返回地图库</button>
+      <div><span class="eyebrow">当前场景</span><h2 id="currentMapName">云隐山水</h2></div>
+      <button id="resetScene" class="secondary-action">重置角色</button>
+    </header>
+
+    <div class="explorer-layout">
+      <aside class="tool-panel map-panel">
+        <div class="panel-heading"><h3>场景地图</h3><label>添加<input id="sideMapUpload" type="file" accept="image/*" multiple></label></div>
+        <div id="sideMapList" class="side-map-list"></div>
+        <div class="control-group">
+          <div class="control-title"><span>场景缩放</span><b id="zoomValue">100%</b></div>
+          <input id="zoomRange" type="range" min="60" max="180" value="100">
+        </div>
+        <div class="control-group">
+          <div class="control-title"><span>手机分辨率</span><b id="resolutionLabel">720 × 1280</b></div>
+          <select id="devicePreset">
+            <option value="720x1280">默认竖屏 · 720 × 1280</option>
+            <option value="750x1334">iPhone SE · 750 × 1334</option>
+            <option value="1179x2556">iPhone 15 · 1179 × 2556</option>
+            <option value="1080x2400">安卓高清 · 1080 × 2400</option>
+            <option value="1536x2048">平板竖屏 · 1536 × 2048</option>
+          </select>
+        </div>
+      </aside>
+
+      <section class="stage-column">
+        <div id="deviceFrame" class="device-frame">
+          <div id="scene" class="scene">
+            <div id="builtIn" class="built-in-scene"><div class="sun"></div><div class="mountain back"></div><div class="mountain front"></div><div class="ground"></div><div class="path"></div></div>
+            <img id="stageCharacter" class="stage-character" src="/hero-male.png" alt="当前角色">
+            <div id="spineCharacter" class="stage-character spine-character" hidden><div id="spinePlayer"></div></div>
+          </div>
+          <div class="scene-hud"><span id="hudMapName">云隐山水</span><b>探索中</b></div>
+          <div id="joystick" class="joystick" aria-label="角色移动摇杆"><div class="joystick-ring"></div><div id="knob" class="joystick-knob"></div></div>
+        </div>
+        <p class="stage-help">拖动左下角摇杆移动角色，松手停止</p>
+      </section>
+
+      <aside class="tool-panel character-panel">
+        <div class="panel-heading"><h3>角色设置</h3><label>上传<input id="characterUpload" type="file" accept="image/*" multiple></label></div>
+        <div id="characterList" class="character-list"></div>
+        <div class="control-group">
+          <div class="control-title"><span>角色尺寸</span><b id="sizeValue">135 × 135</b></div>
+          <input id="characterSize" type="range" min="48" max="260" value="135">
+        </div>
+        <div class="coordinate-grid">
+          <label>X 坐标<input id="posX" type="number" value="50" min="0" max="100"></label>
+          <label>Y 坐标<input id="posY" type="number" value="68" min="0" max="100"></label>
+        </div>
+        <div class="active-character-card"><img id="previewCharacter" src="/hero-male.png" alt=""><div><span>当前角色</span><b id="characterName">剑侠 · move-right</b></div></div>
+        <div class="tip-card"><b>移动提示</b><p>角色会沿摇杆方向持续移动，向左时自动翻转。</p></div>
+      </aside>
+    </div>
+  </section>
 </main>
 <script src="/app.js"></script>
 </body>
