@@ -45,7 +45,16 @@ function dbRead(storeName) {
 
 function dbWrite(storeName, value) {
   if (!database) return;
-  database.transaction(storeName, "readwrite").objectStore(storeName).put(value);
+  const storedValue = { ...value };
+  delete storedValue.src;
+  if (Array.isArray(storedValue.buildings)) {
+    storedValue.buildings = storedValue.buildings.map((building) => {
+      const storedBuilding = { ...building };
+      delete storedBuilding.src;
+      return storedBuilding;
+    });
+  }
+  database.transaction(storeName, "readwrite").objectStore(storeName).put(storedValue);
 }
 
 function dbDelete(storeName, key) {
@@ -112,6 +121,14 @@ function renderCharacters() {
   ).join("");
 }
 
+function renderBuildings() {
+  const map = currentMap();
+  map.buildings ??= [];
+  $("buildingLayer").innerHTML = map.buildings.map((building) =>
+    `<img class="scene-building" src="${assetUrl(building)}" alt="" style="left:${building.x}%;top:${building.y}%;width:${building.size / state.width * 100}%">`
+  ).join("");
+}
+
 function renderCamera() {
   const frame = $("deviceFrame");
   const scale = state.zoom / 100;
@@ -167,6 +184,7 @@ function renderExplorer() {
   [$("stageCharacter"), $("spineCharacter")].forEach((node) => {
     node.style.width = `${renderedSize}px`; node.style.height = `${renderedSize}px`;
   });
+  renderBuildings();
   renderCamera();
   renderSideMaps(); renderCharacters();
 }
@@ -227,6 +245,36 @@ async function importMaps(fileList) {
     state.maps.push(map); dbWrite("maps", map);
   }
   renderGallery(); renderSideMaps();
+}
+
+async function importBuildings(fileList, clientX, clientY) {
+  const map = currentMap();
+  map.buildings ??= [];
+  const rect = $("sceneBackground").getBoundingClientRect();
+  const baseX = clamp((clientX - rect.left) / rect.width * 100, 0, 100);
+  const baseY = clamp((clientY - rect.top) / rect.height * 100, 0, 100);
+  let added = 0;
+  for (const file of [...(fileList || [])]) {
+    if (file.size > MAX_UPLOAD_BYTES) {
+      window.alert(`“${file.name}”超过 100MB，已跳过。`);
+      continue;
+    }
+    const info = await imageInfo(file);
+    map.buildings.push({
+      id: `building-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+      blob: file,
+      width: info.width,
+      height: info.height,
+      x: clamp(baseX + added * 3, 0, 100),
+      y: clamp(baseY + added * 3, 0, 100),
+      size: 180,
+    });
+    added += 1;
+  }
+  if (added) {
+    dbWrite("maps", map);
+    renderExplorer();
+  }
 }
 
 async function importCharacters(fileList) {
@@ -357,6 +405,9 @@ function bindMapDrop() {
     event.preventDefault();
     event.dataTransfer.dropEffect = "copy";
     document.body.classList.add("is-dragging-map");
+    const addingBuilding = !$("explorerView").hidden && event.target.closest?.("#deviceFrame");
+    $("dropTitle").textContent = addingBuilding ? "松开添加建筑" : "松开上传地图";
+    $("dropDescription").textContent = addingBuilding ? "建筑会放在当前指向的位置" : "拖到手机地图画布内可添加为建筑";
   });
   document.addEventListener("dragleave", (event) => {
     if (event.relatedTarget === null) hideOverlay();
@@ -371,6 +422,10 @@ function bindMapDrop() {
     );
     if (!files.length) {
       window.alert("请拖入图片文件作为场景地图。");
+      return;
+    }
+    if (!$("explorerView").hidden && event.target.closest?.("#deviceFrame")) {
+      await importBuildings(files, event.clientX, event.clientY);
       return;
     }
     const previousIds = new Set(state.maps.map((map) => map.id));
@@ -400,7 +455,13 @@ async function start() {
   try {
     await openDatabase();
     const [maps, characters] = await Promise.all([dbRead("maps"), dbRead("characters")]);
-    state.maps.push(...maps); state.characters.push(...characters);
+    maps.forEach((map) => {
+      delete map.src;
+      map.buildings?.forEach((building) => delete building.src);
+      const existing = state.maps.find((item) => item.id === map.id);
+      if (existing) Object.assign(existing, map); else state.maps.push(map);
+    });
+    state.characters.push(...characters.map((character) => { delete character.src; return character; }));
   } catch { /* IndexedDB unavailable: the current session still works. */ }
   bindEvents(); bindMapDrop(); renderGallery(); renderExplorer(); initSpine(); movementLoop();
 }

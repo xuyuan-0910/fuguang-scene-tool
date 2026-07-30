@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
   <title>浮光造境 · 地图角色模拟器</title>
   <meta name="description" content="管理地图，并在手机画布中模拟角色移动">
-  <link rel="stylesheet" href="./styles.css?v=20260730-5">
+  <link rel="stylesheet" href="./styles.css?v=20260730-6">
   <link rel="stylesheet" href="./spine-player.css">
 </head>
 <body>
@@ -60,6 +60,7 @@
           <div id="scene" class="scene">
             <div id="sceneBackground" class="scene-background">
             <div id="builtIn" class="built-in-scene"><div class="sun"></div><div class="mountain back"></div><div class="mountain front"></div><div class="ground"></div><div class="path"></div></div>
+            <div id="buildingLayer" class="building-layer"></div>
             </div>
             <img id="stageCharacter" class="stage-character" src="./hero-male.png" alt="当前角色">
             <div id="spineCharacter" class="stage-character spine-character" hidden><div id="spinePlayer"></div></div>
@@ -91,8 +92,8 @@
     </div>
   </section>
 </main>
-<div id="dropOverlay" class="drop-overlay" aria-hidden="true"><div><b>松开上传地图</b><span>支持 PNG、JPG、WEBP 等图片，单张不超过 100MB</span></div></div>
+<div id="dropOverlay" class="drop-overlay" aria-hidden="true"><div><b id="dropTitle">松开上传地图</b><span id="dropDescription">拖到手机地图画布内可添加为建筑</span></div></div>
 <script src="./spine-player.js?v=20260730-2"></script>
-<script src="./app.js?v=20260730-13"></script>
+<script src="./app.js?v=20260730-14"></script>
 </body>
 </html>
