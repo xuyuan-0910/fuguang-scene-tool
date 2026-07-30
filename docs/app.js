@@ -93,14 +93,17 @@ function renderCharacters() {
 function renderCamera() {
   const frame = $("deviceFrame");
   const scale = state.zoom / 100;
-  const canFollow = scale > 1;
-  const progressX = clamp((state.x - 50) / 46, -1, 1);
-  const progressY = clamp((state.y - 50) / 45, -1, 1);
-  const panX = canFollow ? -progressX * frame.clientWidth * (scale - 1) / 2 : 0;
-  const panY = canFollow ? -progressY * frame.clientHeight * (scale - 1) / 2 : 0;
+  const worldX = state.x / 100;
+  const worldY = state.y / 100;
+  const cameraMin = scale >= 1 ? .5 / scale : .5;
+  const cameraMax = scale >= 1 ? 1 - cameraMin : .5;
+  const cameraX = scale >= 1 ? clamp(worldX, cameraMin, cameraMax) : .5;
+  const cameraY = scale >= 1 ? clamp(worldY, cameraMin, cameraMax) : .5;
+  const panX = -(cameraX - .5) * scale * frame.clientWidth;
+  const panY = -(cameraY - .5) * scale * frame.clientHeight;
   $("sceneBackground").style.transform = `translate3d(${panX}px, ${panY}px, 0) scale(${scale})`;
-  const characterX = canFollow ? 50 : state.x;
-  const characterY = canFollow ? 50 : state.y;
+  const characterX = scale >= 1 ? 50 + (worldX - cameraX) * scale * 100 : state.x;
+  const characterY = scale >= 1 ? 50 + (worldY - cameraY) * scale * 100 : state.y;
   [$("stageCharacter"), $("spineCharacter")].forEach((node) => {
     node.style.left = `${characterX}%`;
     node.style.top = `${characterY}%`;
