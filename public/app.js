@@ -103,7 +103,7 @@ function renderGallery() {
     const preview = map.builtIn
       ? '<div class="map-cover built-in-cover"><i></i><i></i><i></i></div>'
       : `<img class="map-cover" src="${assetUrl(map)}" alt="${map.name}">`;
-    const remove = map.builtIn ? "" : `<button class="map-delete" type="button" data-delete-map="${map.id}" aria-label="删除场景 ${map.name}" title="删除场景">×</button>`;
+    const remove = `<button class="map-delete" type="button" data-delete-map="${map.id}" aria-label="删除场景 ${map.name}" title="删除场景">×</button>`;
     return `<article class="map-tile" data-map-id="${map.id}" tabindex="0">${preview}<span class="map-tile-info"><b>${map.name}</b><small>${map.width} × ${map.height}</small></span><i class="enter-mark">进入</i>${remove}</article>`;
   }).join("") + '<label class="map-tile add-map-tile"><span>＋</span><b>上传新地图</b><small>PNG / JPG / WEBP · 最大 100MB</small><input id="galleryMapUpload" type="file" accept="image/*" multiple></label>';
   $("mapCount").textContent = state.maps.length;
@@ -111,9 +111,10 @@ function renderGallery() {
 }
 
 function renderSideMaps() {
+  $("sideMapList").classList.toggle("scrollable", state.maps.length > 4);
   $("sideMapList").innerHTML = state.maps.map((map) => {
     const image = map.builtIn ? '<span class="mini-built-in"></span>' : `<img src="${assetUrl(map)}" alt="">`;
-    const remove = map.builtIn ? "" : `<button class="side-map-delete" type="button" data-delete-map="${map.id}" aria-label="删除场景 ${map.name}" title="删除场景">×</button>`;
+    const remove = `<button class="side-map-delete" type="button" data-delete-map="${map.id}" aria-label="删除场景 ${map.name}" title="删除场景">×</button>`;
     return `<div data-map-id="${map.id}" class="side-map ${map.id === state.mapId ? "active" : ""}" role="button" tabindex="0">${image}<span>${map.name}</span>${remove}</div>`;
   }).join("");
 }
@@ -231,13 +232,16 @@ function goHome() {
 
 function deleteMap(id) {
   const map = state.maps.find((item) => item.id === id);
-  if (!map || map.builtIn) return;
+  if (!map) return;
   if (!window.confirm(`确定删除场景“${map.name}”吗？`)) return;
   if (map.src?.startsWith("blob:")) URL.revokeObjectURL(map.src);
   state.maps = state.maps.filter((item) => item.id !== id);
   dbDelete("maps", id);
-  if (state.mapId === id) state.mapId = "default";
-  if ($("explorerView").hidden) renderGallery(); else renderExplorer();
+  if (map.builtIn) localStorage.setItem("fuguang-default-map-deleted", "1");
+  if (state.mapId === id) state.mapId = state.maps[0]?.id || null;
+  if (!state.maps.length) goHome();
+  else if ($("explorerView").hidden) renderGallery();
+  else renderExplorer();
 }
 
 function setSceneZoom(value) {
@@ -374,7 +378,7 @@ function initSpine() {
         spineReady = true;
         spineAnimation = "";
         setDirectionalAnimation(moving ? "move" : "idle");
-        renderExplorer();
+        if (state.maps.length) renderExplorer();
       },
     });
   } catch { spineReady = false; }
@@ -580,9 +584,12 @@ function movementLoop(timestamp = 0) {
 
 async function start() {
   try {
+    const defaultDeleted = localStorage.getItem("fuguang-default-map-deleted") === "1";
+    if (defaultDeleted) state.maps = state.maps.filter((map) => !map.builtIn);
     await openDatabase();
     const [maps, characters] = await Promise.all([dbRead("maps"), dbRead("characters")]);
     maps.forEach((map) => {
+      if (defaultDeleted && map.id === "default") { dbDelete("maps", map.id); return; }
       delete map.src;
       map.buildings?.forEach((building) => delete building.src);
       const existing = state.maps.find((item) => item.id === map.id);
@@ -590,7 +597,7 @@ async function start() {
     });
     state.characters.push(...characters.map((character) => { delete character.src; return character; }));
   } catch { /* IndexedDB unavailable: the current session still works. */ }
-  bindEvents(); bindMapDrop(); renderGallery(); renderExplorer(); initSpine(); movementLoop();
+  bindEvents(); bindMapDrop(); renderGallery(); if (state.maps.length) renderExplorer(); initSpine(); movementLoop();
 }
 
 start();
