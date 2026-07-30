@@ -20,6 +20,8 @@ let spineAnimation = "";
 let facing = "right";
 let stickOrigin = null;
 let lastFrameTime = 0;
+let selectedBuildingId = null;
+let draggingBuildingId = null;
 
 function openDatabase() {
   return new Promise((resolve, reject) => {
@@ -124,12 +126,26 @@ function renderCharacters() {
 function renderBuildings() {
   const map = currentMap();
   map.buildings ??= [];
+  if (!map.buildings.some((building) => building.id === selectedBuildingId)) selectedBuildingId = null;
   $("buildingLayer").innerHTML = map.buildings.map((building) =>
-    `<img class="scene-building" src="${assetUrl(building)}" alt="" style="left:${building.x}%;top:${building.y}%;width:${building.size / state.width * 100}%">`
+    `<img class="scene-building ${building.id === selectedBuildingId ? "selected" : ""}" data-building-id="${building.id}" src="${assetUrl(building)}" alt="" style="left:${building.x}%;top:${building.y}%;width:${building.size / state.width * 100}%">`
   ).join("");
   $("buildingList").innerHTML = map.buildings.length ? map.buildings.map((building, index) =>
-    `<div class="building-preview"><img src="${assetUrl(building)}" alt="建筑 ${index + 1}"><button type="button" data-delete-building="${building.id}" title="删除建筑" aria-label="删除建筑 ${index + 1}">×</button></div>`
+    `<div class="building-preview ${building.id === selectedBuildingId ? "selected" : ""}" data-building-select="${building.id}"><img src="${assetUrl(building)}" alt="建筑 ${index + 1}"><button type="button" data-delete-building="${building.id}" title="删除建筑" aria-label="删除建筑 ${index + 1}">×</button></div>`
   ).join("") : '<p class="building-empty">当前地图还没有建筑</p>';
+  const selected = map.buildings.find((building) => building.id === selectedBuildingId);
+  $("buildingConfig").hidden = !selected;
+  if (selected) $("buildingSize").value = Math.round(selected.size);
+}
+
+function selectBuilding(id) {
+  selectedBuildingId = id;
+  const map = currentMap();
+  const selected = map.buildings?.find((building) => building.id === id);
+  document.querySelectorAll("[data-building-id]").forEach((node) => node.classList.toggle("selected", node.dataset.buildingId === id));
+  document.querySelectorAll("[data-building-select]").forEach((node) => node.classList.toggle("selected", node.dataset.buildingSelect === id));
+  $("buildingConfig").hidden = !selected;
+  if (selected) $("buildingSize").value = Math.round(selected.size);
 }
 
 function renderCamera() {
@@ -271,6 +287,7 @@ async function addBuildingsAt(fileList, baseX, baseY) {
     added += 1;
   }
   if (added) {
+    selectedBuildingId = map.buildings.at(-1).id;
     dbWrite("maps", map);
     renderExplorer();
   }
@@ -289,8 +306,19 @@ function deleteBuilding(id) {
   if (!building) return;
   if (building.src?.startsWith("blob:")) URL.revokeObjectURL(building.src);
   map.buildings = map.buildings.filter((item) => item.id !== id);
+  if (selectedBuildingId === id) selectedBuildingId = null;
   dbWrite("maps", map);
   renderExplorer();
+}
+
+function moveBuildingFromPointer(id, event) {
+  const building = currentMap().buildings?.find((item) => item.id === id);
+  if (!building) return;
+  const rect = $("sceneBackground").getBoundingClientRect();
+  building.x = clamp((event.clientX - rect.left) / rect.width * 100, 0, 100);
+  building.y = clamp((event.clientY - rect.top) / rect.height * 100, 0, 100);
+  const node = document.querySelector(`[data-building-id="${id}"]`);
+  if (node) { node.style.left = `${building.x}%`; node.style.top = `${building.y}%`; }
 }
 
 async function importCharacters(fileList) {
@@ -351,7 +379,20 @@ function bindEvents() {
   $("characterList").onclick = (event) => { const card = event.target.closest("[data-character-id]"); if (card) { state.characterId = card.dataset.characterId; renderExplorer(); } };
   $("sideMapUpload").onchange = async (event) => { await importMaps(event.target.files); state.mapId = state.maps.at(-1).id; renderExplorer(); };
   $("buildingUpload").onchange = async (event) => { await addBuildingsAt(event.target.files, 50, 72); event.target.value = ""; };
-  $("buildingList").onclick = (event) => { const remove = event.target.closest("[data-delete-building]"); if (remove) deleteBuilding(remove.dataset.deleteBuilding); };
+  $("buildingList").onclick = (event) => {
+    const remove = event.target.closest("[data-delete-building]");
+    if (remove) { deleteBuilding(remove.dataset.deleteBuilding); return; }
+    const preview = event.target.closest("[data-building-select]");
+    if (preview) selectBuilding(preview.dataset.buildingSelect);
+  };
+  $("buildingSize").oninput = (event) => {
+    const building = currentMap().buildings?.find((item) => item.id === selectedBuildingId);
+    if (!building) return;
+    building.size = clamp(+event.target.value || 20, 20, 3000);
+    const node = document.querySelector(`[data-building-id="${building.id}"]`);
+    if (node) node.style.width = `${building.size / state.width * 100}%`;
+  };
+  $("buildingSize").onchange = () => { if (selectedBuildingId) dbWrite("maps", currentMap()); };
   $("characterUpload").onchange = (event) => importCharacters(event.target.files);
   $("backHome").onclick = goHome;
   $("resetScene").onclick = () => { state.x = 50; state.y = 68; setSceneZoom(currentMap().fit === "contain" ? 100 : 140); };
@@ -370,6 +411,32 @@ function bindEvents() {
   $("devicePreset").onchange = (event) => { [state.width, state.height] = event.target.value.split("x").map(Number); renderExplorer(); };
   $("posX").onchange = (event) => { state.x = clamp(+event.target.value, 0, 100); renderExplorer(); };
   $("posY").onchange = (event) => { state.y = clamp(+event.target.value, 0, 100); renderExplorer(); };
+  const buildingLayer = $("buildingLayer");
+  buildingLayer.onpointerdown = (event) => {
+    const building = event.target.closest("[data-building-id]");
+    if (!building || (event.button !== undefined && event.button !== 0)) return;
+    event.preventDefault();
+    event.stopPropagation();
+    draggingBuildingId = building.dataset.buildingId;
+    selectBuilding(draggingBuildingId);
+    building.setPointerCapture(event.pointerId);
+    moveBuildingFromPointer(draggingBuildingId, event);
+  };
+  buildingLayer.onpointermove = (event) => {
+    if (!draggingBuildingId) return;
+    event.preventDefault();
+    event.stopPropagation();
+    moveBuildingFromPointer(draggingBuildingId, event);
+  };
+  const stopBuildingDrag = (event) => {
+    if (!draggingBuildingId) return;
+    event?.stopPropagation();
+    moveBuildingFromPointer(draggingBuildingId, event);
+    dbWrite("maps", currentMap());
+    draggingBuildingId = null;
+  };
+  buildingLayer.onpointerup = stopBuildingDrag;
+  buildingLayer.onpointercancel = () => { if (draggingBuildingId) { dbWrite("maps", currentMap()); draggingBuildingId = null; } };
   const frame = $("deviceFrame");
   frame.onpointerdown = (event) => {
     if (event.button !== undefined && event.button !== 0) return;
