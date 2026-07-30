@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
   <title>浮光造境 · 地图角色模拟器</title>
   <meta name="description" content="管理地图，并在手机画布中模拟角色移动">
-  <link rel="stylesheet" href="./styles.css?v=20260730-6">
+  <link rel="stylesheet" href="./styles.css?v=20260730-7">
   <link rel="stylesheet" href="./spine-player.css">
 </head>
 <body>
@@ -32,11 +32,6 @@
       <aside class="tool-panel map-panel">
         <div class="panel-heading"><h3>场景地图</h3><label>添加<input id="sideMapUpload" type="file" accept="image/*" multiple></label></div>
         <div id="sideMapList" class="side-map-list"></div>
-        <div class="control-group building-panel-section">
-          <div class="building-panel-heading"><span>场景建筑</span><label class="building-add">＋ 添加建筑<input id="buildingUpload" type="file" accept="image/*" multiple></label></div>
-          <div id="buildingList" class="building-list"></div>
-          <p class="building-help">点击添加后建筑会出现在地图中央，也可以直接把图片拖到地图上的指定位置。</p>
-        </div>
         <div class="control-group">
           <div class="control-title"><span>场景缩放</span><b id="zoomValue">140%</b></div>
           <div class="zoom-control"><button id="zoomOut" type="button">-</button><input id="zoomRange" type="range" min="60" max="1000" value="140"><button id="zoomIn" type="button">+</button></div>
@@ -75,6 +70,12 @@
         </div>
         <p class="stage-help">在地图任意位置按住并拖动即可移动角色，松手停止</p>
       </section>
+
+      <aside class="tool-panel building-panel">
+        <div class="panel-heading"><h3>场景建筑</h3><label>添加<input id="buildingUpload" type="file" accept="image/*" multiple></label></div>
+        <div id="buildingList" class="building-list"></div>
+        <p class="building-help">点击添加后建筑会出现在地图中央，也可以直接把图片拖到地图上的指定位置。</p>
+      </aside>
 
       <aside class="tool-panel character-panel">
         <div class="panel-heading"><h3>角色设置</h3><label>上传<input id="characterUpload" type="file" accept="image/*" multiple></label></div>
