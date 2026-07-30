@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
   <title>浮光造境 · 角色场景模拟器</title>
   <meta name="description" content="上传地图与角色，在手机画布中模拟移动和缩放">
-  <link rel="stylesheet" href="/styles.css">
+  <link rel="stylesheet" href="./styles.css">
 </head>
 <body>
 <main class="app-shell">
@@ -46,7 +46,7 @@
         <div class="device-frame" id="deviceFrame">
           <div class="scene" id="scene">
             <div class="built-in-scene" id="builtIn"><div class="sun"></div><div class="mountain back"></div><div class="mountain front"></div><div class="cloud cloud-one"></div><div class="cloud cloud-two"></div><div class="ground"></div><div class="path"></div></div>
-            <img class="stage-character" id="stageCharacter" src="data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=" alt="当前角色">
+            <img class="stage-character" id="stageCharacter" src="./hero-male.png" alt="当前角色">
           </div>
           <div class="hud"><span>云隐村</span><b>探索中</b></div>
           <div class="joystick" id="joystick" aria-label="角色移动摇杆"><div class="joystick-ring"></div><div class="joystick-knob" id="knob"></div></div>
@@ -59,7 +59,7 @@
     <aside class="paper-card right-panel">
       <div class="ink-heading"><h2>角色属性</h2><span class="cloud-mark">〰</span></div>
       <span class="live-chip">实时</span>
-      <div class="character-preview"><img id="previewCharacter" src="data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=" alt=""><div><b id="characterName">剑侠 · move-right</b><small>角色图层</small></div></div>
+      <div class="character-preview"><img id="previewCharacter" src="./hero-male.png" alt=""><div><b id="characterName">剑侠 · move-right</b><small>角色图层</small></div></div>
       <div class="control-block"><div class="control-label"><span>角色尺寸</span><b id="sizeValue">135 × 135</b></div><input id="characterSize" type="range" min="48" max="260" value="135"><div class="range-labels"><span>48 px</span><span>260 px</span></div></div>
       <div class="control-block"><div class="control-label"><span>场景缩放</span><b id="zoomValue">100%</b></div><input id="zoomRange" type="range" min="60" max="180" value="100"></div>
       <div class="coordinate-grid"><label>X 坐标<input id="posX" type="number" value="50"></label><label>Y 坐标<input id="posY" type="number" value="68"></label></div>
@@ -69,6 +69,6 @@
   </section>
   <footer>所有素材仅存储在本地设备中，不会上传至服务器</footer>
 </main>
-<script src="/app.js"></script>
+<script src="./app.js"></script>
 </body>
 </html>
