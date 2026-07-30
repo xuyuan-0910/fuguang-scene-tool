@@ -4,7 +4,7 @@ const MAX_UPLOAD_BYTES = 100 * 1024 * 1024;
 const state = {
   maps: [{ id: "default", name: "云隐山水", builtIn: true, width: 720, height: 1280, zoom: 140 }],
   characters: [
-    { id: "spine", name: "剑侠 · move-right", src: "./hero-male.png", spine: true },
+    { id: "spine", name: "剑侠", src: "./hero-male.png", spine: true },
     { id: "female", name: "小师妹", src: "./hero-female.png" },
   ],
   mapId: "default", characterId: "spine", width: 720, height: 1280,
@@ -16,6 +16,7 @@ let move = { x: 0, y: 0 };
 let moving = false;
 let spineReady = false;
 let spinePlayer = null;
+let spineAnimation = "";
 let stickOrigin = null;
 let lastFrameTime = 0;
 
@@ -62,6 +63,13 @@ function assetUrl(item) {
 
 function currentMap() { return state.maps.find((item) => item.id === state.mapId) || state.maps[0]; }
 function currentCharacter() { return state.characters.find((item) => item.id === state.characterId) || state.characters[0]; }
+
+function setSpineAnimation(name) {
+  if (!spineReady || !spinePlayer || spineAnimation === name) return;
+  spinePlayer.setAnimation?.(name);
+  spinePlayer.play?.();
+  spineAnimation = name;
+}
 
 function renderGallery() {
   const gallery = $("mapGallery");
@@ -222,7 +230,7 @@ function initSpine() {
     spinePlayer = new spine.SpinePlayer("spinePlayer", {
       skelUrl: "./player.skel",
       atlasUrl: "./player.atlas",
-      animation: "move-right",
+      animation: "idle-right",
       showControls: false,
       showLoading: false,
       alpha: true,
@@ -231,8 +239,8 @@ function initSpine() {
       success(player) {
         spinePlayer = player;
         spineReady = true;
-        player.setAnimation?.("move-right");
-        if (moving) player.play?.(); else player.pause?.();
+        spineAnimation = "";
+        setSpineAnimation(moving ? "move-right" : "idle-right");
         renderExplorer();
       },
     });
@@ -284,8 +292,7 @@ function bindEvents() {
     const target = currentCharacter().spine && spineReady ? $("spineCharacter") : $("stageCharacter");
     if (target === $("stageCharacter")) target.classList.add("is-walking");
     if (currentCharacter().spine && spineReady) {
-      spinePlayer?.setAnimation?.("move-right");
-      spinePlayer?.play?.();
+      setSpineAnimation("move-right");
     }
     frame.setPointerCapture(event.pointerId);
     updateStick(event);
@@ -295,7 +302,7 @@ function bindEvents() {
     moving = false;
     move = { x: 0, y: 0 };
     stickOrigin = null;
-    spinePlayer?.pause?.();
+    if (currentCharacter().spine && spineReady) setSpineAnimation("idle-right");
     $("stageCharacter").classList.remove("is-walking");
     $("spineCharacter").classList.remove("is-walking");
     $("knob").style.transform = "translate(-50%, -50%)";
