@@ -378,7 +378,12 @@ function bindEvents() {
   $("sideMapList").onclick = (event) => { const remove = event.target.closest("[data-delete-map]"); if (remove) { event.stopPropagation(); deleteMap(remove.dataset.deleteMap); return; } const card = event.target.closest("[data-map-id]"); if (card) { state.mapId = card.dataset.mapId; renderExplorer(); } };
   $("characterList").onclick = (event) => { const card = event.target.closest("[data-character-id]"); if (card) { state.characterId = card.dataset.characterId; renderExplorer(); } };
   $("sideMapUpload").onchange = async (event) => { await importMaps(event.target.files); state.mapId = state.maps.at(-1).id; renderExplorer(); };
-  $("buildingUpload").onchange = async (event) => { await addBuildingsAt(event.target.files, 50, 72); event.target.value = ""; };
+  $("buildingUpload").onchange = async (event) => {
+    const offsets = [[-12, -10], [12, -10], [-12, 8], [12, 8], [0, -18], [0, 16]];
+    const offset = offsets[(currentMap().buildings?.length || 0) % offsets.length];
+    await addBuildingsAt(event.target.files, clamp(state.x + offset[0], 5, 95), clamp(state.y + offset[1], 10, 95));
+    event.target.value = "";
+  };
   $("buildingList").onclick = (event) => {
     const remove = event.target.closest("[data-delete-building]");
     if (remove) { deleteBuilding(remove.dataset.deleteBuilding); return; }
@@ -472,6 +477,9 @@ function bindEvents() {
   frame.onpointerup = stop;
   frame.onpointercancel = stop;
   frame.onlostpointercapture = () => { if (moving) stop(); };
+  document.addEventListener("pointerdown", (event) => {
+    if (!event.target.closest("[data-building-id], [data-building-select], #buildingConfig")) selectBuilding(null);
+  });
   window.addEventListener("resize", () => { if (!$("explorerView").hidden) renderExplorer(); });
 }
 
