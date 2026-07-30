@@ -22,6 +22,7 @@ let stickOrigin = null;
 let lastFrameTime = 0;
 let selectedBuildingId = null;
 let draggingBuildingId = null;
+let buildingDragOffset = { x: 0, y: 0 };
 
 function openDatabase() {
   return new Promise((resolve, reject) => {
@@ -315,8 +316,8 @@ function moveBuildingFromPointer(id, event) {
   const building = currentMap().buildings?.find((item) => item.id === id);
   if (!building) return;
   const rect = $("sceneBackground").getBoundingClientRect();
-  building.x = clamp((event.clientX - rect.left) / rect.width * 100, 0, 100);
-  building.y = clamp((event.clientY - rect.top) / rect.height * 100, 0, 100);
+  building.x = clamp((event.clientX - buildingDragOffset.x - rect.left) / rect.width * 100, 0, 100);
+  building.y = clamp((event.clientY - buildingDragOffset.y - rect.top) / rect.height * 100, 0, 100);
   const node = document.querySelector(`[data-building-id="${id}"]`);
   if (node) { node.style.left = `${building.x}%`; node.style.top = `${building.y}%`; }
 }
@@ -424,8 +425,13 @@ function bindEvents() {
     event.stopPropagation();
     draggingBuildingId = building.dataset.buildingId;
     selectBuilding(draggingBuildingId);
+    const item = currentMap().buildings?.find((entry) => entry.id === draggingBuildingId);
+    const rect = $("sceneBackground").getBoundingClientRect();
+    buildingDragOffset = item ? {
+      x: event.clientX - (rect.left + item.x / 100 * rect.width),
+      y: event.clientY - (rect.top + item.y / 100 * rect.height),
+    } : { x: 0, y: 0 };
     building.setPointerCapture(event.pointerId);
-    moveBuildingFromPointer(draggingBuildingId, event);
   };
   buildingLayer.onpointermove = (event) => {
     if (!draggingBuildingId) return;
@@ -439,9 +445,10 @@ function bindEvents() {
     moveBuildingFromPointer(draggingBuildingId, event);
     dbWrite("maps", currentMap());
     draggingBuildingId = null;
+    buildingDragOffset = { x: 0, y: 0 };
   };
   buildingLayer.onpointerup = stopBuildingDrag;
-  buildingLayer.onpointercancel = () => { if (draggingBuildingId) { dbWrite("maps", currentMap()); draggingBuildingId = null; } };
+  buildingLayer.onpointercancel = () => { if (draggingBuildingId) { dbWrite("maps", currentMap()); draggingBuildingId = null; buildingDragOffset = { x: 0, y: 0 }; } };
   const frame = $("deviceFrame");
   frame.onpointerdown = (event) => {
     if (event.button !== undefined && event.button !== 0) return;
