@@ -185,6 +185,7 @@ function renderExplorer() {
   $("zoomRange").value = state.zoom;
   $("sizeValue").textContent = `${state.size} × ${state.size}`;
   $("characterSize").value = state.size;
+  $("characterSizeInput").value = state.size;
   $("speedValue").textContent = `${state.speed}%`;
   $("movementSpeed").value = state.speed;
   $("resolutionLabel").textContent = `${state.width} × ${state.height}`;
@@ -413,6 +414,8 @@ function bindEvents() {
     renderExplorer();
   };
   $("characterSize").oninput = (event) => { state.size = +event.target.value; renderExplorer(); };
+  $("characterSizeInput").onchange = (event) => { state.size = clamp(+event.target.value || 96, 48, 260); renderExplorer(); };
+  $("characterSizeInput").onkeydown = (event) => { if (event.key === "Enter") event.target.blur(); };
   $("movementSpeed").oninput = (event) => { state.speed = +event.target.value; $("speedValue").textContent = `${state.speed}%`; };
   $("devicePreset").onchange = (event) => { [state.width, state.height] = event.target.value.split("x").map(Number); renderExplorer(); };
   $("posX").onchange = (event) => { state.x = clamp(+event.target.value, 0, 100); renderExplorer(); };

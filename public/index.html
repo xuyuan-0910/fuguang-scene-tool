@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
   <title>浮光造境 · 地图角色模拟器</title>
   <meta name="description" content="管理地图，并在手机画布中模拟角色移动">
-  <link rel="stylesheet" href="./styles.css?v=20260730-9">
+  <link rel="stylesheet" href="./styles.css?v=20260730-10">
   <link rel="stylesheet" href="./spine-player.css">
 </head>
 <body>
@@ -86,7 +86,7 @@
         <div class="panel-heading"><h3>角色设置</h3><label>上传<input id="characterUpload" type="file" accept="image/*" multiple></label></div>
         <div id="characterList" class="character-list"></div>
           <div class="control-group">
-            <div class="control-title"><span>角色尺寸</span><b id="sizeValue">96 × 96</b></div>
+            <div class="control-title"><span>角色尺寸</span><span class="size-input-group"><input id="characterSizeInput" type="number" min="48" max="260" step="1" value="96" aria-label="输入角色尺寸"><b id="sizeValue">96 × 96</b></span></div>
             <input id="characterSize" type="range" min="48" max="260" value="96">
           </div>
           <div class="control-group">
@@ -104,6 +104,6 @@
 </main>
 <div id="dropOverlay" class="drop-overlay" aria-hidden="true"><div><b id="dropTitle">松开上传地图</b><span id="dropDescription">拖到手机地图画布内可添加为建筑</span></div></div>
 <script src="./spine-player.js?v=20260730-2"></script>
-<script src="./app.js?v=20260730-18"></script>
+<script src="./app.js?v=20260730-19"></script>
 </body>
 </html>
