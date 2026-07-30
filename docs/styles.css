@@ -1,4 +1,4 @@
-@import "tailwindcss";
+
 
 :root { --ink:#20201d; --muted:#827f75; --line:#ddd9ce; --paper:#f4f1e8; --card:#fffdf7; --accent:#c85836; --green:#476c5a; }
 * { box-sizing:border-box; }
