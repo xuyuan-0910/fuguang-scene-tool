@@ -66,10 +66,14 @@
       <aside class="tool-panel character-panel">
         <div class="panel-heading"><h3>角色设置</h3><label>上传<input id="characterUpload" type="file" accept="image/*" multiple></label></div>
         <div id="characterList" class="character-list"></div>
-        <div class="control-group">
-          <div class="control-title"><span>角色尺寸</span><b id="sizeValue">96 × 96</b></div>
-          <input id="characterSize" type="range" min="48" max="260" value="96">
-        </div>
+          <div class="control-group">
+            <div class="control-title"><span>角色尺寸</span><b id="sizeValue">96 × 96</b></div>
+            <input id="characterSize" type="range" min="48" max="260" value="96">
+          </div>
+          <div class="control-group">
+            <div class="control-title"><span>移动速度</span><b id="speedValue">100%</b></div>
+            <input id="movementSpeed" type="range" min="25" max="200" step="5" value="100">
+          </div>
         <div class="coordinate-grid">
           <label>X 坐标<input id="posX" type="number" value="50" min="0" max="100"></label>
           <label>Y 坐标<input id="posY" type="number" value="68" min="0" max="100"></label>
@@ -81,6 +85,6 @@
   </section>
 </main>
 <script src="./spine-player.js"></script>
-<script src="./app.js?v=20260730-6"></script>
+<script src="./app.js?v=20260730-7"></script>
 </body>
 </html>
