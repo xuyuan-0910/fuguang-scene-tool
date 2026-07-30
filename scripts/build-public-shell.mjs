@@ -24,6 +24,8 @@ js = js
 let css = await readFile("app/globals.css", "utf8");
 css = css.replace("url('/8dc458cc-bc1e-4a18-a9da-45372ae547fe.png')", "url('./8dc458cc-bc1e-4a18-a9da-45372ae547fe.png')");
 html = html.replace(/<link\s+rel="stylesheet"\s+href="[^"]+">/, `<style>\n${css}\n</style>`);
+const spineCss = await readFile("public/spine-player.css", "utf8");
+html = html.replace('<link rel="stylesheet" href="./spine-player.css">', `<style>\n${spineCss}\n</style>`);
 
 await writeFile(`${output}/index.html`, html);
 await writeFile(`${output}/styles.css`, css);
@@ -31,6 +33,8 @@ await writeFile(`${output}/app.js`, js);
 await writeFile(`${output}/.nojekyll`, "");
 
 for (const file of [
+  "spine-player.js",
+  "spine-player.css",
   "hero-male.png",
   "hero-female.png",
   "player.skel",

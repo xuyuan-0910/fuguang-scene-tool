@@ -195,21 +195,26 @@ async function importCharacters(fileList) {
 }
 
 function initSpine() {
-  const css = document.createElement("link");
-  css.rel = "stylesheet"; css.href = "https://unpkg.com/@esotericsoftware/spine-player@3.8.*/dist/spine-player.css";
-  document.head.appendChild(css);
-  const script = document.createElement("script");
-  script.src = "https://unpkg.com/@esotericsoftware/spine-player@3.8.*/dist/iife/spine-player.js";
-  script.onload = () => {
-    try {
-      spinePlayer = new spine.SpinePlayer("spinePlayer", { skelUrl: "./player.skel", atlasUrl: "./player.atlas", animation: "move-right", loop: true, showControls: false, showLoading: false, alpha: true, backgroundColor: "#00000000", premultipliedAlpha: false });
-      const timer = setInterval(() => {
-        if ($("spinePlayer").querySelector("canvas")) { spineReady = true; spinePlayer.pause?.(); clearInterval(timer); renderExplorer(); }
-      }, 250);
-      setTimeout(() => clearInterval(timer), 8000);
-    } catch { spineReady = false; }
-  };
-  document.head.appendChild(script);
+  if (!window.spine?.SpinePlayer) return;
+  try {
+    spinePlayer = new spine.SpinePlayer("spinePlayer", {
+      skelUrl: "./player.skel",
+      atlasUrl: "./player.atlas",
+      animation: "move-right",
+      showControls: false,
+      showLoading: false,
+      alpha: true,
+      backgroundColor: "#00000000",
+      premultipliedAlpha: false,
+      success(player) {
+        spinePlayer = player;
+        spineReady = true;
+        player.setAnimation?.("move-right");
+        if (moving) player.play?.(); else player.pause?.();
+        renderExplorer();
+      },
+    });
+  } catch { spineReady = false; }
 }
 
 function updateStick(event) {
@@ -222,7 +227,7 @@ function updateStick(event) {
   move = { x: dx * scale / radius, y: dy * scale / radius };
   $("knob").style.transform = `translate(calc(-50% + ${move.x * 28}px), calc(-50% + ${move.y * 28}px))`;
   const target = currentCharacter().spine && spineReady ? $("spineCharacter") : $("stageCharacter");
-  if (Math.abs(move.x) > .08) target.style.transform = `translate(-50%, -50%) scaleX(${move.x < 0 ? -1 : 1})`;
+  if (Math.abs(move.x) > .08) target.style.setProperty("--facing", move.x < 0 ? "-1" : "1");
 }
 
 function bindEvents() {
@@ -253,7 +258,12 @@ function bindEvents() {
     joystick.classList.add("is-active");
     moving = true;
     move = { x: 0, y: 0 };
-    if (currentCharacter().spine && spineReady) spinePlayer?.play?.();
+    const target = currentCharacter().spine && spineReady ? $("spineCharacter") : $("stageCharacter");
+    target.classList.add("is-walking");
+    if (currentCharacter().spine && spineReady) {
+      spinePlayer?.setAnimation?.("move-right");
+      spinePlayer?.play?.();
+    }
     frame.setPointerCapture(event.pointerId);
     updateStick(event);
   };
@@ -263,6 +273,8 @@ function bindEvents() {
     move = { x: 0, y: 0 };
     stickOrigin = null;
     spinePlayer?.pause?.();
+    $("stageCharacter").classList.remove("is-walking");
+    $("spineCharacter").classList.remove("is-walking");
     $("knob").style.transform = "translate(-50%, -50%)";
     $("joystick").classList.remove("is-active");
   };
