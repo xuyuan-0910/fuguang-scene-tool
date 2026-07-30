@@ -2,13 +2,13 @@ const $ = (id) => document.getElementById(id);
 const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
 const MAX_UPLOAD_BYTES = 100 * 1024 * 1024;
 const state = {
-  maps: [{ id: "default", name: "云隐山水", builtIn: true, width: 720, height: 1280 }],
+  maps: [{ id: "default", name: "云隐山水", builtIn: true, width: 720, height: 1280, zoom: 140 }],
   characters: [
     { id: "spine", name: "剑侠 · move-right", src: "./hero-male.png", spine: true },
     { id: "female", name: "小师妹", src: "./hero-female.png" },
   ],
   mapId: "default", characterId: "spine", width: 720, height: 1280,
-  zoom: 100, size: 96, x: 50, y: 68,
+  zoom: 140, size: 96, x: 50, y: 68,
 };
 
 let database;
@@ -89,6 +89,23 @@ function renderCharacters() {
   ).join("");
 }
 
+function renderCamera() {
+  const frame = $("deviceFrame");
+  const scale = state.zoom / 100;
+  const canFollow = scale > 1;
+  const progressX = clamp((state.x - 50) / 46, -1, 1);
+  const progressY = clamp((state.y - 50) / 45, -1, 1);
+  const panX = canFollow ? -progressX * frame.clientWidth * (scale - 1) / 2 : 0;
+  const panY = canFollow ? -progressY * frame.clientHeight * (scale - 1) / 2 : 0;
+  $("sceneBackground").style.transform = `translate3d(${panX}px, ${panY}px, 0) scale(${scale})`;
+  const characterX = canFollow ? 50 : state.x;
+  const characterY = canFollow ? 50 : state.y;
+  [$("stageCharacter"), $("spineCharacter")].forEach((node) => {
+    node.style.left = `${characterX}%`;
+    node.style.top = `${characterY}%`;
+  });
+}
+
 function renderExplorer() {
   const map = currentMap();
   const character = currentCharacter();
@@ -96,8 +113,7 @@ function renderExplorer() {
   $("hudMapName").textContent = map.name;
   $("builtIn").hidden = !map.builtIn;
   $("sceneBackground").style.backgroundImage = map.builtIn ? "" : `url("${assetUrl(map)}")`;
-  state.zoom = map.zoom || 100;
-  $("sceneBackground").style.transform = `scale(${state.zoom / 100})`;
+  state.zoom = map.zoom ?? 140;
   $("zoomValue").textContent = `${state.zoom}%`;
   $("zoomRange").value = state.zoom;
   $("sizeValue").textContent = `${state.size} × ${state.size}`;
@@ -118,8 +134,8 @@ function renderExplorer() {
   const renderedSize = state.size * displayScale;
   [$("stageCharacter"), $("spineCharacter")].forEach((node) => {
     node.style.width = `${renderedSize}px`; node.style.height = `${renderedSize}px`;
-    node.style.left = `${state.x}%`; node.style.top = `${state.y}%`;
   });
+  renderCamera();
   renderSideMaps(); renderCharacters();
 }
 
@@ -237,7 +253,7 @@ function bindEvents() {
   $("sideMapUpload").onchange = async (event) => { await importMaps(event.target.files); state.mapId = state.maps.at(-1).id; renderExplorer(); };
   $("characterUpload").onchange = (event) => importCharacters(event.target.files);
   $("backHome").onclick = goHome;
-  $("resetScene").onclick = () => { state.x = 50; state.y = 68; setSceneZoom(100); };
+  $("resetScene").onclick = () => { state.x = 50; state.y = 68; setSceneZoom(140); };
   $("zoomRange").oninput = (event) => setSceneZoom(+event.target.value);
   $("zoomOut").onclick = () => setSceneZoom(state.zoom - 10);
   $("zoomIn").onclick = () => setSceneZoom(state.zoom + 10);
@@ -287,8 +303,7 @@ function bindEvents() {
 function movementLoop() {
   if (moving) {
     state.x = clamp(state.x + move.x * .4, 4, 96); state.y = clamp(state.y + move.y * .4, 5, 95);
-    const target = currentCharacter().spine && spineReady ? $("spineCharacter") : $("stageCharacter");
-    target.style.left = `${state.x}%`; target.style.top = `${state.y}%`;
+    renderCamera();
     $("posX").value = Math.round(state.x); $("posY").value = Math.round(state.y);
   }
   requestAnimationFrame(movementLoop);
