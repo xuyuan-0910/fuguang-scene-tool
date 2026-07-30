@@ -16,6 +16,7 @@
 .device-frame{touch-action:none;cursor:crosshair}.device-frame:active{cursor:grabbing}.joystick{pointer-events:none;transition:opacity .12s}.joystick.is-active{opacity:1}.joystick:not(.is-active){opacity:.72}
 .stage-character{transform:translate(-50%,-50%) scaleX(var(--facing,1));will-change:left,top,transform}.stage-character.is-walking{animation:character-walk-bob .42s ease-in-out infinite}@keyframes character-walk-bob{0%,100%{transform:translate(-50%,-50%) scaleX(var(--facing,1))}50%{transform:translate(-50%,calc(-50% - 2px)) scaleX(var(--facing,1))}}
 .scene-background{background-repeat:no-repeat;background-color:#dce5e1}
+.drop-overlay{position:fixed;z-index:999;inset:16px;display:grid;place-items:center;border:3px dashed #fff;border-radius:22px;background:#16496be8;color:#fff;opacity:0;visibility:hidden;pointer-events:none;transition:opacity .15s,visibility .15s;backdrop-filter:blur(8px)}.is-dragging-map .drop-overlay{opacity:1;visibility:visible}.drop-overlay div{text-align:center;padding:30px}.drop-overlay b,.drop-overlay span{display:block}.drop-overlay b{font:700 clamp(26px,5vw,48px) "KaiTi",serif}.drop-overlay span{margin-top:12px;font-size:13px;color:#e4f2f8}
 
 </style>
   <style>
@@ -512,7 +513,8 @@
     </div>
   </section>
 </main>
+<div id="dropOverlay" class="drop-overlay" aria-hidden="true"><div><b>松开上传地图</b><span>支持 PNG、JPG、WEBP 等图片，单张不超过 100MB</span></div></div>
 <script src="./spine-player.js?v=20260730-2"></script>
-<script src="./app.js?v=20260730-12"></script>
+<script src="./app.js?v=20260730-13"></script>
 </body>
 </html>
