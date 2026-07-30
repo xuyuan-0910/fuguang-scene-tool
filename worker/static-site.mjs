@@ -39,13 +39,13 @@ async function handleMaps(request, env, url) {
 
   if (url.pathname === "/api/maps" && request.method === "POST") {
     const contentLength = Number(request.headers.get("content-length")) || 0;
-    if (contentLength > 8 * 1024 * 1024) return json({ error: "图片不能超过 8MB" }, 413);
+    if (contentLength > 100 * 1024 * 1024) return json({ error: "图片不能超过 100MB" }, 413);
     const form = await request.formData();
     const file = form.get("file");
     if (!file || typeof file.arrayBuffer !== "function") return json({ error: "请选择图片" }, 400);
     if (!/^image\/(png|jpeg|webp|gif)$/i.test(file.type)) return json({ error: "仅支持 PNG、JPG、WEBP 或 GIF" }, 415);
     const bytes = await file.arrayBuffer();
-    if (bytes.byteLength > 8 * 1024 * 1024) return json({ error: "图片不能超过 8MB" }, 413);
+    if (bytes.byteLength > 100 * 1024 * 1024) return json({ error: "图片不能超过 100MB" }, 413);
     const id = crypto.randomUUID();
     const name = String(form.get("name") || file.name || "共享场景").slice(0, 80);
     const metadata = {

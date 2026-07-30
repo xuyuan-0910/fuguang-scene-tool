@@ -1,5 +1,6 @@
 const $ = (id) => document.getElementById(id);
 const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
+const MAX_UPLOAD_BYTES = 100 * 1024 * 1024;
 const state = {
   maps: [{ id: "default", name: "云隐山水", builtIn: true, width: 720, height: 1280 }],
   characters: [
@@ -69,7 +70,7 @@ function renderGallery() {
       : `<img class="map-cover" src="${assetUrl(map)}" alt="${map.name}">`;
     const remove = map.builtIn ? "" : `<button class="map-delete" type="button" data-delete-map="${map.id}" aria-label="删除场景 ${map.name}" title="删除场景">×</button>`;
     return `<article class="map-tile" data-map-id="${map.id}" tabindex="0">${preview}<span class="map-tile-info"><b>${map.name}</b><small>${map.width} × ${map.height}</small></span><i class="enter-mark">进入</i>${remove}</article>`;
-  }).join("") + '<label class="map-tile add-map-tile"><span>＋</span><b>上传新地图</b><small>PNG / JPG / WEBP</small><input id="galleryMapUpload" type="file" accept="image/*" multiple></label>';
+  }).join("") + '<label class="map-tile add-map-tile"><span>＋</span><b>上传新地图</b><small>PNG / JPG / WEBP · 最大 100MB</small><input id="galleryMapUpload" type="file" accept="image/*" multiple></label>';
   $("mapCount").textContent = state.maps.length;
   $("galleryMapUpload").onchange = (event) => importMaps(event.target.files);
 }
@@ -169,6 +170,10 @@ async function imageInfo(file) {
 async function importMaps(fileList) {
   const files = [...(fileList || [])];
   for (const file of files) {
+    if (file.size > MAX_UPLOAD_BYTES) {
+      window.alert(`“${file.name}”超过 100MB，已跳过。`);
+      continue;
+    }
     const info = await imageInfo(file);
     const map = { id: `map-${Date.now()}-${Math.random().toString(16).slice(2)}`, name: file.name.replace(/\.[^.]+$/, ""), blob: file, width: info.width, height: info.height, createdAt: Date.now() };
     state.maps.push(map); dbWrite("maps", map);
@@ -178,6 +183,10 @@ async function importMaps(fileList) {
 
 async function importCharacters(fileList) {
   for (const file of [...(fileList || [])]) {
+    if (file.size > MAX_UPLOAD_BYTES) {
+      window.alert(`“${file.name}”超过 100MB，已跳过。`);
+      continue;
+    }
     const info = await imageInfo(file);
     const character = { id: `character-${Date.now()}-${Math.random().toString(16).slice(2)}`, name: file.name.replace(/\.[^.]+$/, ""), blob: file, width: info.width, height: info.height, createdAt: Date.now() };
     state.characters.push(character); state.characterId = character.id; dbWrite("characters", character);
