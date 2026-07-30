@@ -9612,6 +9612,8 @@ var spine;
 			};
 			SceneRenderer.prototype.resize = function (resizeMode) {
 				var canvas = this.canvas;
+				if (canvas.clientWidth <= 0 || canvas.clientHeight <= 0)
+					return;
 				var pixelRatio = Math.min(window.devicePixelRatio || 1, 3);
 				var w = Math.max(1, Math.round(canvas.clientWidth * pixelRatio));
 				var h = Math.max(1, Math.round(canvas.clientHeight * pixelRatio));
