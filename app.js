@@ -8,7 +8,7 @@ const state = {
     { id: "female", name: "小师妹", src: "./hero-female.png" },
   ],
   mapId: "default", characterId: "spine", width: 720, height: 1280,
-  zoom: 140, size: 96, x: 50, y: 68,
+  zoom: 140, size: 96, speed: 100, x: 50, y: 68,
 };
 
 let database;
@@ -17,6 +17,7 @@ let moving = false;
 let spineReady = false;
 let spinePlayer = null;
 let stickOrigin = null;
+let lastFrameTime = 0;
 
 function openDatabase() {
   return new Promise((resolve, reject) => {
@@ -118,6 +119,8 @@ function renderExplorer() {
   $("zoomRange").value = state.zoom;
   $("sizeValue").textContent = `${state.size} × ${state.size}`;
   $("characterSize").value = state.size;
+  $("speedValue").textContent = `${state.speed}%`;
+  $("movementSpeed").value = state.speed;
   $("resolutionLabel").textContent = `${state.width} × ${state.height}`;
   $("devicePreset").value = `${state.width}x${state.height}`;
   $("posX").value = Math.round(state.x);
@@ -258,6 +261,7 @@ function bindEvents() {
   $("zoomOut").onclick = () => setSceneZoom(state.zoom - 10);
   $("zoomIn").onclick = () => setSceneZoom(state.zoom + 10);
   $("characterSize").oninput = (event) => { state.size = +event.target.value; renderExplorer(); };
+  $("movementSpeed").oninput = (event) => { state.speed = +event.target.value; $("speedValue").textContent = `${state.speed}%`; };
   $("devicePreset").onchange = (event) => { [state.width, state.height] = event.target.value.split("x").map(Number); renderExplorer(); };
   $("posX").onchange = (event) => { state.x = clamp(+event.target.value, 0, 100); renderExplorer(); };
   $("posY").onchange = (event) => { state.y = clamp(+event.target.value, 0, 100); renderExplorer(); };
@@ -275,7 +279,7 @@ function bindEvents() {
     moving = true;
     move = { x: 0, y: 0 };
     const target = currentCharacter().spine && spineReady ? $("spineCharacter") : $("stageCharacter");
-    target.classList.add("is-walking");
+    if (target === $("stageCharacter")) target.classList.add("is-walking");
     if (currentCharacter().spine && spineReady) {
       spinePlayer?.setAnimation?.("move-right");
       spinePlayer?.play?.();
@@ -300,9 +304,12 @@ function bindEvents() {
   window.addEventListener("resize", () => { if (!$("explorerView").hidden) renderExplorer(); });
 }
 
-function movementLoop() {
+function movementLoop(timestamp = 0) {
+  const deltaSeconds = lastFrameTime ? clamp((timestamp - lastFrameTime) / 1000, 0, .05) : 0;
+  lastFrameTime = timestamp;
   if (moving) {
-    state.x = clamp(state.x + move.x * .4, 4, 96); state.y = clamp(state.y + move.y * .4, 5, 95);
+    const distance = 24 * deltaSeconds * (state.speed / 100);
+    state.x = clamp(state.x + move.x * distance, 4, 96); state.y = clamp(state.y + move.y * distance, 5, 95);
     renderCamera();
     $("posX").value = Math.round(state.x); $("posY").value = Math.round(state.y);
   }
