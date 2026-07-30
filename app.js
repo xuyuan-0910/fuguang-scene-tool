@@ -4,17 +4,18 @@ const state = {
   maps: [{ id: "default", name: "云隐山水", builtIn: true, width: 720, height: 1280 }],
   characters: [
     { id: "spine", name: "剑侠 · move-right", src: "./hero-male.png", spine: true },
-    { id: "male", name: "少侠", src: "./hero-male.png" },
     { id: "female", name: "小师妹", src: "./hero-female.png" },
   ],
   mapId: "default", characterId: "spine", width: 720, height: 1280,
-  zoom: 100, size: 135, x: 50, y: 68,
+  zoom: 100, size: 96, x: 50, y: 68,
 };
 
 let database;
 let move = { x: 0, y: 0 };
 let moving = false;
 let spineReady = false;
+let spinePlayer = null;
+let stickOrigin = null;
 
 function openDatabase() {
   return new Promise((resolve, reject) => {
@@ -43,6 +44,11 @@ function dbWrite(storeName, value) {
   database.transaction(storeName, "readwrite").objectStore(storeName).put(value);
 }
 
+function dbDelete(storeName, key) {
+  if (!database) return;
+  database.transaction(storeName, "readwrite").objectStore(storeName).delete(key);
+}
+
 function assetUrl(item) {
   if (item.src) return item.src;
   if (item.blob) {
@@ -61,7 +67,8 @@ function renderGallery() {
     const preview = map.builtIn
       ? '<div class="map-cover built-in-cover"><i></i><i></i><i></i></div>'
       : `<img class="map-cover" src="${assetUrl(map)}" alt="${map.name}">`;
-    return `<button class="map-tile" data-map-id="${map.id}">${preview}<span class="map-tile-info"><b>${map.name}</b><small>${map.width} × ${map.height}</small></span><i class="enter-mark">进入</i></button>`;
+    const remove = map.builtIn ? "" : `<button class="map-delete" type="button" data-delete-map="${map.id}" aria-label="删除场景 ${map.name}" title="删除场景">×</button>`;
+    return `<article class="map-tile" data-map-id="${map.id}" tabindex="0">${preview}<span class="map-tile-info"><b>${map.name}</b><small>${map.width} × ${map.height}</small></span><i class="enter-mark">进入</i>${remove}</article>`;
   }).join("") + '<label class="map-tile add-map-tile"><span>＋</span><b>上传新地图</b><small>PNG / JPG / WEBP</small><input id="galleryMapUpload" type="file" accept="image/*" multiple></label>';
   $("mapCount").textContent = state.maps.length;
   $("galleryMapUpload").onchange = (event) => importMaps(event.target.files);
@@ -70,7 +77,8 @@ function renderGallery() {
 function renderSideMaps() {
   $("sideMapList").innerHTML = state.maps.map((map) => {
     const image = map.builtIn ? '<span class="mini-built-in"></span>' : `<img src="${assetUrl(map)}" alt="">`;
-    return `<button data-map-id="${map.id}" class="side-map ${map.id === state.mapId ? "active" : ""}">${image}<span>${map.name}</span></button>`;
+    const remove = map.builtIn ? "" : `<button class="side-map-delete" type="button" data-delete-map="${map.id}" aria-label="删除场景 ${map.name}" title="删除场景">×</button>`;
+    return `<div data-map-id="${map.id}" class="side-map ${map.id === state.mapId ? "active" : ""}" role="button" tabindex="0">${image}<span>${map.name}</span>${remove}</div>`;
   }).join("");
 }
 
@@ -86,8 +94,9 @@ function renderExplorer() {
   $("currentMapName").textContent = map.name;
   $("hudMapName").textContent = map.name;
   $("builtIn").hidden = !map.builtIn;
-  $("scene").style.backgroundImage = map.builtIn ? "" : `url("${assetUrl(map)}")`;
-  $("scene").style.transform = `scale(${state.zoom / 100})`;
+  $("sceneBackground").style.backgroundImage = map.builtIn ? "" : `url("${assetUrl(map)}")`;
+  state.zoom = map.zoom || 100;
+  $("sceneBackground").style.transform = `scale(${state.zoom / 100})`;
   $("zoomValue").textContent = `${state.zoom}%`;
   $("zoomRange").value = state.zoom;
   $("sizeValue").textContent = `${state.size} × ${state.size}`;
@@ -101,13 +110,15 @@ function renderExplorer() {
   $("stageCharacter").src = assetUrl(character);
   $("stageCharacter").hidden = character.spine && spineReady;
   $("spineCharacter").hidden = !character.spine || !spineReady;
-  [$("stageCharacter"), $("spineCharacter")].forEach((node) => {
-    node.style.width = `${state.size}px`; node.style.height = `${state.size}px`;
-    node.style.left = `${state.x}%`; node.style.top = `${state.y}%`;
-  });
   const aspect = state.width / state.height;
   $("deviceFrame").style.aspectRatio = `${state.width} / ${state.height}`;
   $("deviceFrame").style.width = aspect > .8 ? "min(62vh, 520px)" : "min(48vh, 390px)";
+  const displayScale = $("deviceFrame").clientWidth / state.width || 1;
+  const renderedSize = state.size * displayScale;
+  [$("stageCharacter"), $("spineCharacter")].forEach((node) => {
+    node.style.width = `${renderedSize}px`; node.style.height = `${renderedSize}px`;
+    node.style.left = `${state.x}%`; node.style.top = `${state.y}%`;
+  });
   renderSideMaps(); renderCharacters();
 }
 
@@ -123,6 +134,24 @@ function goHome() {
   $("explorerView").hidden = true;
   $("homeView").hidden = false;
   renderGallery();
+}
+
+function deleteMap(id) {
+  const map = state.maps.find((item) => item.id === id);
+  if (!map || map.builtIn) return;
+  if (!window.confirm(`确定删除场景“${map.name}”吗？`)) return;
+  if (map.src?.startsWith("blob:")) URL.revokeObjectURL(map.src);
+  state.maps = state.maps.filter((item) => item.id !== id);
+  dbDelete("maps", id);
+  if (state.mapId === id) state.mapId = "default";
+  if ($("explorerView").hidden) renderGallery(); else renderExplorer();
+}
+
+function setSceneZoom(value) {
+  const map = currentMap();
+  map.zoom = clamp(value, 60, 400);
+  state.zoom = map.zoom;
+  renderExplorer();
 }
 
 async function imageInfo(file) {
@@ -164,9 +193,9 @@ function initSpine() {
   script.src = "https://unpkg.com/@esotericsoftware/spine-player@3.8.*/dist/iife/spine-player.js";
   script.onload = () => {
     try {
-      new spine.SpinePlayer("spinePlayer", { skelUrl: "./player.skel", atlasUrl: "./player.atlas", animation: "move-right", showControls: false, showLoading: false, alpha: true, backgroundColor: "#00000000", premultipliedAlpha: false });
+      spinePlayer = new spine.SpinePlayer("spinePlayer", { skelUrl: "./player.skel", atlasUrl: "./player.atlas", animation: "move-right", loop: true, showControls: false, showLoading: false, alpha: true, backgroundColor: "#00000000", premultipliedAlpha: false });
       const timer = setInterval(() => {
-        if ($("spinePlayer").querySelector("canvas")) { spineReady = true; clearInterval(timer); renderExplorer(); }
+        if ($("spinePlayer").querySelector("canvas")) { spineReady = true; spinePlayer.pause?.(); clearInterval(timer); renderExplorer(); }
       }, 250);
       setTimeout(() => clearInterval(timer), 8000);
     } catch { spineReady = false; }
@@ -175,10 +204,10 @@ function initSpine() {
 }
 
 function updateStick(event) {
-  const rect = $("joystick").getBoundingClientRect();
-  const radius = rect.width / 2;
-  const dx = event.clientX - rect.left - radius;
-  const dy = event.clientY - rect.top - radius;
+  if (!stickOrigin) return;
+  const radius = $("joystick").offsetWidth / 2;
+  const dx = event.clientX - stickOrigin.x;
+  const dy = event.clientY - stickOrigin.y;
   const distance = Math.hypot(dx, dy);
   const scale = distance > radius ? radius / distance : 1;
   move = { x: dx * scale / radius, y: dy * scale / radius };
@@ -188,23 +217,50 @@ function updateStick(event) {
 }
 
 function bindEvents() {
-  $("mapGallery").onclick = (event) => { const card = event.target.closest("[data-map-id]"); if (card) enterMap(card.dataset.mapId); };
-  $("sideMapList").onclick = (event) => { const card = event.target.closest("[data-map-id]"); if (card) { state.mapId = card.dataset.mapId; renderExplorer(); } };
+  $("mapGallery").onclick = (event) => { const remove = event.target.closest("[data-delete-map]"); if (remove) { event.stopPropagation(); deleteMap(remove.dataset.deleteMap); return; } const card = event.target.closest("[data-map-id]"); if (card) enterMap(card.dataset.mapId); };
+  $("sideMapList").onclick = (event) => { const remove = event.target.closest("[data-delete-map]"); if (remove) { event.stopPropagation(); deleteMap(remove.dataset.deleteMap); return; } const card = event.target.closest("[data-map-id]"); if (card) { state.mapId = card.dataset.mapId; renderExplorer(); } };
   $("characterList").onclick = (event) => { const card = event.target.closest("[data-character-id]"); if (card) { state.characterId = card.dataset.characterId; renderExplorer(); } };
-  $("homeMapUpload").onchange = (event) => importMaps(event.target.files);
   $("sideMapUpload").onchange = async (event) => { await importMaps(event.target.files); state.mapId = state.maps.at(-1).id; renderExplorer(); };
   $("characterUpload").onchange = (event) => importCharacters(event.target.files);
   $("backHome").onclick = goHome;
-  $("resetScene").onclick = () => { state.x = 50; state.y = 68; state.zoom = 100; renderExplorer(); };
-  $("zoomRange").oninput = (event) => { state.zoom = +event.target.value; renderExplorer(); };
+  $("resetScene").onclick = () => { state.x = 50; state.y = 68; setSceneZoom(100); };
+  $("zoomRange").oninput = (event) => setSceneZoom(+event.target.value);
+  $("zoomOut").onclick = () => setSceneZoom(state.zoom - 10);
+  $("zoomIn").onclick = () => setSceneZoom(state.zoom + 10);
   $("characterSize").oninput = (event) => { state.size = +event.target.value; renderExplorer(); };
   $("devicePreset").onchange = (event) => { [state.width, state.height] = event.target.value.split("x").map(Number); renderExplorer(); };
   $("posX").onchange = (event) => { state.x = clamp(+event.target.value, 0, 100); renderExplorer(); };
   $("posY").onchange = (event) => { state.y = clamp(+event.target.value, 0, 100); renderExplorer(); };
-  $("joystick").onpointerdown = (event) => { moving = true; $("joystick").setPointerCapture(event.pointerId); updateStick(event); };
-  $("joystick").onpointermove = (event) => { if (moving) updateStick(event); };
-  const stop = () => { moving = false; move = { x: 0, y: 0 }; $("knob").style.transform = "translate(-50%, -50%)"; };
-  $("joystick").onpointerup = stop; $("joystick").onpointercancel = stop;
+  const frame = $("deviceFrame");
+  frame.onpointerdown = (event) => {
+    if (event.button !== undefined && event.button !== 0) return;
+    event.preventDefault();
+    const rect = frame.getBoundingClientRect();
+    stickOrigin = { x: event.clientX, y: event.clientY };
+    const joystick = $("joystick");
+    joystick.style.left = `${event.clientX - rect.left}px`;
+    joystick.style.top = `${event.clientY - rect.top}px`;
+    joystick.style.bottom = "auto";
+    joystick.classList.add("is-active");
+    moving = true;
+    move = { x: 0, y: 0 };
+    if (currentCharacter().spine && spineReady) spinePlayer?.play?.();
+    frame.setPointerCapture(event.pointerId);
+    updateStick(event);
+  };
+  frame.onpointermove = (event) => { if (moving) updateStick(event); };
+  const stop = () => {
+    moving = false;
+    move = { x: 0, y: 0 };
+    stickOrigin = null;
+    spinePlayer?.pause?.();
+    $("knob").style.transform = "translate(-50%, -50%)";
+    $("joystick").classList.remove("is-active");
+  };
+  frame.onpointerup = stop;
+  frame.onpointercancel = stop;
+  frame.onlostpointercapture = () => { if (moving) stop(); };
+  window.addEventListener("resize", () => { if (!$("explorerView").hidden) renderExplorer(); });
 }
 
 function movementLoop() {
