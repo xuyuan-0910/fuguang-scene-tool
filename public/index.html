@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
   <title>浮光造境 · 地图角色模拟器</title>
   <meta name="description" content="管理地图，并在手机画布中模拟角色移动">
-  <link rel="stylesheet" href="./styles.css?v=20260730-12">
+  <link rel="stylesheet" href="./styles.css?v=20260730-13">
   <link rel="stylesheet" href="./spine-player.css">
 </head>
 <body>
@@ -68,7 +68,7 @@
           <div class="scene-hud"><span id="hudMapName">云隐山水</span><b>探索中</b></div>
           <div id="joystick" class="joystick" aria-label="角色移动摇杆"><div class="joystick-ring"></div><div id="knob" class="joystick-knob"></div></div>
         </div>
-        <p class="stage-help">在地图任意位置按住并拖动即可移动角色，松手停止</p>
+        <p id="movementHelp" class="stage-help">在地图任意位置按住并拖动即可移动角色，松手停止</p>
       </section>
 
       <aside class="tool-panel building-panel">
@@ -103,11 +103,20 @@
         </div>
         <div class="tip-card"><b>移动提示</b><p>角色会沿摇杆方向持续移动，向左时自动翻转。</p></div>
       </aside>
+
+      <aside class="tool-panel operation-panel">
+        <div class="panel-heading"><h3>操作栏</h3></div>
+        <div id="controlMode" class="control-mode" role="group" aria-label="角色移动方式">
+          <button type="button" data-control-mode="click">点击行走</button>
+          <button type="button" data-control-mode="joystick" class="active">摇杆行走</button>
+        </div>
+        <div class="tip-card"><b>当前操作</b><p id="controlModeHelp">在地图任意位置按住并拖动摇杆，角色会沿拖动方向持续行走。</p></div>
+      </aside>
     </div>
   </section>
 </main>
 <div id="dropOverlay" class="drop-overlay" aria-hidden="true"><div><b id="dropTitle">松开上传地图</b><span id="dropDescription">拖到手机地图画布内可添加为建筑</span></div></div>
 <script src="./spine-player.js?v=20260730-2"></script>
-<script src="./app.js?v=20260730-21"></script>
+<script src="./app.js?v=20260730-22"></script>
 </body>
 </html>
