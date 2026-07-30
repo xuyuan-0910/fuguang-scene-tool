@@ -213,6 +213,22 @@ function renderCamera() {
   });
 }
 
+function refreshHighResolutionRendering() {
+  if ($("explorerView").hidden) return;
+  const resizeSpineCanvas = () => {
+    if ($("explorerView").hidden || !spinePlayer?.sceneRenderer || !window.spine?.webgl?.ResizeMode) return;
+    spinePlayer.sceneRenderer.resize(spine.webgl.ResizeMode.Expand);
+  };
+  requestAnimationFrame(() => {
+    renderCamera();
+    resizeSpineCanvas();
+    requestAnimationFrame(() => {
+      renderCamera();
+      resizeSpineCanvas();
+    });
+  });
+}
+
 function renderExplorer() {
   const map = currentMap();
   const character = currentCharacter();
@@ -250,6 +266,7 @@ function renderExplorer() {
   renderBuildings();
   renderCamera();
   renderSideMaps(); renderCharacters(); renderControlMode();
+  refreshHighResolutionRendering();
 }
 
 function enterMap(id) {
