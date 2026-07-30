@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
   <title>浮光造境 · 地图角色模拟器</title>
   <meta name="description" content="管理地图，并在手机画布中模拟角色移动">
-  <link rel="stylesheet" href="./styles.css?v=20260730-10">
+  <link rel="stylesheet" href="./styles.css?v=20260730-11">
   <link rel="stylesheet" href="./spine-player.css">
 </head>
 <body>
@@ -78,6 +78,10 @@
           <label for="buildingSize">建筑宽度（像素）</label>
           <input id="buildingSize" type="number" min="20" max="3000" step="1" value="180">
           <small>高度按原图比例自动调整</small>
+          <div class="building-actions">
+            <button id="buildingSceneAction" type="button">删除场景内建筑</button>
+            <button id="buildingLibraryDelete" class="danger" type="button">删除建筑栏内建筑</button>
+          </div>
         </div>
         <p class="building-help">点击添加后建筑会出现在地图中央，也可以直接把图片拖到地图上的指定位置。</p>
       </aside>
@@ -104,6 +108,6 @@
 </main>
 <div id="dropOverlay" class="drop-overlay" aria-hidden="true"><div><b id="dropTitle">松开上传地图</b><span id="dropDescription">拖到手机地图画布内可添加为建筑</span></div></div>
 <script src="./spine-player.js?v=20260730-2"></script>
-<script src="./app.js?v=20260730-19"></script>
+<script src="./app.js?v=20260730-20"></script>
 </body>
 </html>

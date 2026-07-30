@@ -127,16 +127,20 @@ function renderCharacters() {
 function renderBuildings() {
   const map = currentMap();
   map.buildings ??= [];
+  map.buildings.forEach((building) => { building.inScene ??= true; });
   if (!map.buildings.some((building) => building.id === selectedBuildingId)) selectedBuildingId = null;
-  $("buildingLayer").innerHTML = map.buildings.map((building) =>
+  $("buildingLayer").innerHTML = map.buildings.filter((building) => building.inScene).map((building) =>
     `<img class="scene-building ${building.id === selectedBuildingId ? "selected" : ""}" data-building-id="${building.id}" src="${assetUrl(building)}" alt="" style="left:${building.x}%;top:${building.y}%;width:${building.size / state.width * 100}%">`
   ).join("");
   $("buildingList").innerHTML = map.buildings.length ? map.buildings.map((building, index) =>
-    `<div class="building-preview ${building.id === selectedBuildingId ? "selected" : ""}" data-building-select="${building.id}"><img src="${assetUrl(building)}" alt="建筑 ${index + 1}"><button type="button" data-delete-building="${building.id}" title="删除建筑" aria-label="删除建筑 ${index + 1}">×</button></div>`
+    `<div class="building-preview ${building.id === selectedBuildingId ? "selected" : ""} ${building.inScene ? "" : "off-scene"}" data-building-select="${building.id}"><img src="${assetUrl(building)}" alt="建筑 ${index + 1}">${building.inScene ? "" : '<span class="building-status">未放入</span>'}</div>`
   ).join("") : '<p class="building-empty">当前地图还没有建筑</p>';
   const selected = map.buildings.find((building) => building.id === selectedBuildingId);
   $("buildingConfig").hidden = !selected;
-  if (selected) $("buildingSize").value = Math.round(selected.size);
+  if (selected) {
+    $("buildingSize").value = Math.round(selected.size);
+    $("buildingSceneAction").textContent = selected.inScene ? "删除场景内建筑" : "重新添加到场景";
+  }
 }
 
 function selectBuilding(id) {
@@ -146,7 +150,10 @@ function selectBuilding(id) {
   document.querySelectorAll("[data-building-id]").forEach((node) => node.classList.toggle("selected", node.dataset.buildingId === id));
   document.querySelectorAll("[data-building-select]").forEach((node) => node.classList.toggle("selected", node.dataset.buildingSelect === id));
   $("buildingConfig").hidden = !selected;
-  if (selected) $("buildingSize").value = Math.round(selected.size);
+  if (selected) {
+    $("buildingSize").value = Math.round(selected.size);
+    $("buildingSceneAction").textContent = selected.inScene ? "删除场景内建筑" : "重新添加到场景";
+  }
 }
 
 function renderCamera() {
@@ -285,6 +292,7 @@ async function addBuildingsAt(fileList, baseX, baseY) {
       x: clamp(baseX + added * 3, 0, 100),
       y: clamp(baseY + added * 3, 0, 100),
       size: 180,
+      inScene: true,
     });
     added += 1;
   }
@@ -302,13 +310,26 @@ async function importBuildings(fileList, clientX, clientY) {
   await addBuildingsAt(fileList, x, y);
 }
 
-function deleteBuilding(id) {
+function deleteBuildingFromLibrary(id) {
   const map = currentMap();
   const building = map.buildings?.find((item) => item.id === id);
   if (!building) return;
   if (building.src?.startsWith("blob:")) URL.revokeObjectURL(building.src);
   map.buildings = map.buildings.filter((item) => item.id !== id);
   if (selectedBuildingId === id) selectedBuildingId = null;
+  dbWrite("maps", map);
+  renderExplorer();
+}
+
+function toggleBuildingInScene(id) {
+  const map = currentMap();
+  const building = map.buildings?.find((item) => item.id === id);
+  if (!building) return;
+  building.inScene = !building.inScene;
+  if (building.inScene) {
+    building.x = clamp(state.x, 5, 95);
+    building.y = clamp(state.y - 6, 10, 95);
+  }
   dbWrite("maps", map);
   renderExplorer();
 }
@@ -387,8 +408,6 @@ function bindEvents() {
     event.target.value = "";
   };
   $("buildingList").onclick = (event) => {
-    const remove = event.target.closest("[data-delete-building]");
-    if (remove) { deleteBuilding(remove.dataset.deleteBuilding); return; }
     const preview = event.target.closest("[data-building-select]");
     if (preview) selectBuilding(preview.dataset.buildingSelect);
   };
@@ -400,6 +419,11 @@ function bindEvents() {
     if (node) node.style.width = `${building.size / state.width * 100}%`;
   };
   $("buildingSize").onchange = () => { if (selectedBuildingId) dbWrite("maps", currentMap()); };
+  $("buildingSceneAction").onclick = () => { if (selectedBuildingId) toggleBuildingInScene(selectedBuildingId); };
+  $("buildingLibraryDelete").onclick = () => {
+    if (!selectedBuildingId) return;
+    if (window.confirm("确定从建筑栏彻底删除这个建筑吗？")) deleteBuildingFromLibrary(selectedBuildingId);
+  };
   $("characterUpload").onchange = (event) => importCharacters(event.target.files);
   $("backHome").onclick = goHome;
   $("resetScene").onclick = () => { state.x = 50; state.y = 68; setSceneZoom(currentMap().fit === "contain" ? 100 : 140); };
