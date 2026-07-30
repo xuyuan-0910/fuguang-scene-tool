@@ -17,6 +17,7 @@ let moving = false;
 let spineReady = false;
 let spinePlayer = null;
 let spineAnimation = "";
+let facing = "right";
 let stickOrigin = null;
 let lastFrameTime = 0;
 
@@ -69,6 +70,19 @@ function setSpineAnimation(name) {
   spinePlayer.setAnimation?.(name);
   spinePlayer.play?.();
   spineAnimation = name;
+}
+
+const directionalAnimations = {
+  "idle-right": { clip: "idle-right", scaleX: "1" },
+  "idle-left": { clip: "idle-right", scaleX: "-1" },
+  "move-right": { clip: "move-right", scaleX: "1" },
+  "move-left": { clip: "move-right", scaleX: "-1" },
+};
+
+function setDirectionalAnimation(action) {
+  const animation = directionalAnimations[`${action}-${facing}`];
+  [$("stageCharacter"), $("spineCharacter")].forEach((node) => node.style.setProperty("--facing", animation.scaleX));
+  setSpineAnimation(animation.clip);
 }
 
 function renderGallery() {
@@ -240,7 +254,7 @@ function initSpine() {
         spinePlayer = player;
         spineReady = true;
         spineAnimation = "";
-        setSpineAnimation(moving ? "move-right" : "idle-right");
+        setDirectionalAnimation(moving ? "move" : "idle");
         renderExplorer();
       },
     });
@@ -257,7 +271,10 @@ function updateStick(event) {
   move = { x: dx * scale / radius, y: dy * scale / radius };
   $("knob").style.transform = `translate(calc(-50% + ${move.x * 28}px), calc(-50% + ${move.y * 28}px))`;
   const target = currentCharacter().spine && spineReady ? $("spineCharacter") : $("stageCharacter");
-  if (Math.abs(move.x) > .08) target.style.setProperty("--facing", move.x < 0 ? "-1" : "1");
+  if (Math.abs(move.x) > .08) {
+    facing = move.x < 0 ? "left" : "right";
+    setDirectionalAnimation(moving ? "move" : "idle");
+  }
 }
 
 function bindEvents() {
@@ -292,7 +309,7 @@ function bindEvents() {
     const target = currentCharacter().spine && spineReady ? $("spineCharacter") : $("stageCharacter");
     if (target === $("stageCharacter")) target.classList.add("is-walking");
     if (currentCharacter().spine && spineReady) {
-      setSpineAnimation("move-right");
+      setDirectionalAnimation("move");
     }
     frame.setPointerCapture(event.pointerId);
     updateStick(event);
@@ -302,7 +319,7 @@ function bindEvents() {
     moving = false;
     move = { x: 0, y: 0 };
     stickOrigin = null;
-    if (currentCharacter().spine && spineReady) setSpineAnimation("idle-right");
+    if (currentCharacter().spine && spineReady) setDirectionalAnimation("idle");
     $("stageCharacter").classList.remove("is-walking");
     $("spineCharacter").classList.remove("is-walking");
     $("knob").style.transform = "translate(-50%, -50%)";
