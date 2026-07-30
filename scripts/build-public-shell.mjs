@@ -23,6 +23,7 @@ js = js
 
 let css = await readFile("app/globals.css", "utf8");
 css = css.replace("url('/8dc458cc-bc1e-4a18-a9da-45372ae547fe.png')", "url('./8dc458cc-bc1e-4a18-a9da-45372ae547fe.png')");
+html = html.replace(/<link\s+rel="stylesheet"\s+href="[^"]+">/, `<style>\n${css}\n</style>`);
 
 await writeFile(`${output}/index.html`, html);
 await writeFile(`${output}/styles.css`, css);
