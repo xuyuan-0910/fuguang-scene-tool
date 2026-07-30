@@ -342,6 +342,48 @@ function bindEvents() {
   window.addEventListener("resize", () => { if (!$("explorerView").hidden) renderExplorer(); });
 }
 
+function bindMapDrop() {
+  const overlay = $("dropOverlay");
+  const hasFiles = (event) => [...(event.dataTransfer?.types || [])].includes("Files");
+  const hideOverlay = () => document.body.classList.remove("is-dragging-map");
+
+  document.addEventListener("dragenter", (event) => {
+    if (!hasFiles(event)) return;
+    event.preventDefault();
+    document.body.classList.add("is-dragging-map");
+  });
+  document.addEventListener("dragover", (event) => {
+    if (!hasFiles(event)) return;
+    event.preventDefault();
+    event.dataTransfer.dropEffect = "copy";
+    document.body.classList.add("is-dragging-map");
+  });
+  document.addEventListener("dragleave", (event) => {
+    if (event.relatedTarget === null) hideOverlay();
+  });
+  document.addEventListener("dragend", hideOverlay);
+  document.addEventListener("drop", async (event) => {
+    if (!hasFiles(event)) return;
+    event.preventDefault();
+    hideOverlay();
+    const files = [...(event.dataTransfer?.files || [])].filter((file) =>
+      file.type.startsWith("image/") || /\.(png|jpe?g|webp|gif|bmp|avif)$/i.test(file.name)
+    );
+    if (!files.length) {
+      window.alert("请拖入图片文件作为场景地图。");
+      return;
+    }
+    const previousIds = new Set(state.maps.map((map) => map.id));
+    await importMaps(files);
+    if (!$("explorerView").hidden) {
+      const addedMaps = state.maps.filter((map) => !previousIds.has(map.id));
+      if (addedMaps.length) state.mapId = addedMaps.at(-1).id;
+      renderExplorer();
+    }
+  });
+  overlay.setAttribute("aria-hidden", "true");
+}
+
 function movementLoop(timestamp = 0) {
   const deltaSeconds = lastFrameTime ? clamp((timestamp - lastFrameTime) / 1000, 0, .05) : 0;
   lastFrameTime = timestamp;
@@ -360,7 +402,7 @@ async function start() {
     const [maps, characters] = await Promise.all([dbRead("maps"), dbRead("characters")]);
     state.maps.push(...maps); state.characters.push(...characters);
   } catch { /* IndexedDB unavailable: the current session still works. */ }
-  bindEvents(); renderGallery(); renderExplorer(); initSpine(); movementLoop();
+  bindEvents(); bindMapDrop(); renderGallery(); renderExplorer(); initSpine(); movementLoop();
 }
 
 start();
