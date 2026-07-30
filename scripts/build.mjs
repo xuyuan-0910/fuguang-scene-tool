@@ -1,8 +1,8 @@
 import { cp, mkdir, readFile, writeFile } from 'node:fs/promises';
 await mkdir('dist/server',{recursive:true}); await mkdir('dist/static',{recursive:true}); await mkdir('dist/.openai',{recursive:true});
 await mkdir('docs',{recursive:true});
-for(const f of ['index.html','app.js','hero-male.png','hero-female.png','player.skel','player.atlas','player.png']) await cp(`public/${f}`,`dist/static/${f}`);
-for(const f of ['index.html','app.js','hero-male.png','hero-female.png','player.skel','player.atlas','player.png']) await cp(`public/${f}`,`docs/${f}`);
+for(const f of ['index.html','app.js','hero-male.png','hero-female.png','player.skel','player.atlas','player.png','8dc458cc-bc1e-4a18-a9da-45372ae547fe.png']) await cp(`public/${f}`,`dist/static/${f}`);
+for(const f of ['index.html','app.js','hero-male.png','hero-female.png','player.skel','player.atlas','player.png','8dc458cc-bc1e-4a18-a9da-45372ae547fe.png']) await cp(`public/${f}`,`docs/${f}`);
 const css=(await readFile('app/globals.css','utf8')).replace('@import "tailwindcss";',''); await writeFile('dist/static/styles.css',css);
 await writeFile('docs/styles.css',css);
 await cp('.openai/hosting.json','dist/.openai/hosting.json');
