@@ -2,7 +2,7 @@ const $ = (id) => document.getElementById(id);
 const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
 const MAX_UPLOAD_BYTES = 100 * 1024 * 1024;
 const state = {
-  maps: [{ id: "default", name: "云隐山水", builtIn: true, width: 720, height: 1280, zoom: 140 }],
+  maps: [{ id: "default", name: "云隐山水", builtIn: true, width: 720, height: 1280, zoom: 140, fit: "cover" }],
   characters: [
     { id: "spine", name: "剑侠", src: "./hero-male.png", spine: true },
     { id: "female", name: "小师妹", src: "./hero-female.png" },
@@ -139,7 +139,11 @@ function renderExplorer() {
   $("hudMapName").textContent = map.name;
   $("builtIn").hidden = !map.builtIn;
   $("sceneBackground").style.backgroundImage = map.builtIn ? "" : `url("${assetUrl(map)}")`;
-  state.zoom = map.zoom ?? 140;
+  map.fit ??= map.builtIn ? "cover" : "contain";
+  state.zoom = map.zoom ?? (map.builtIn ? 140 : 100);
+  $("sceneBackground").style.backgroundSize = map.fit;
+  $("mapFit").value = map.fit;
+  $("fitValue").textContent = map.fit === "contain" ? "完整显示" : "填满裁切";
   $("zoomValue").textContent = `${state.zoom}%`;
   $("zoomRange").value = state.zoom;
   $("sizeValue").textContent = `${state.size} × ${state.size}`;
@@ -219,7 +223,7 @@ async function importMaps(fileList) {
       continue;
     }
     const info = await imageInfo(file);
-    const map = { id: `map-${Date.now()}-${Math.random().toString(16).slice(2)}`, name: file.name.replace(/\.[^.]+$/, ""), blob: file, width: info.width, height: info.height, createdAt: Date.now() };
+    const map = { id: `map-${Date.now()}-${Math.random().toString(16).slice(2)}`, name: file.name.replace(/\.[^.]+$/, ""), blob: file, width: info.width, height: info.height, zoom: 100, fit: "contain", createdAt: Date.now() };
     state.maps.push(map); dbWrite("maps", map);
   }
   renderGallery(); renderSideMaps();
@@ -284,10 +288,17 @@ function bindEvents() {
   $("sideMapUpload").onchange = async (event) => { await importMaps(event.target.files); state.mapId = state.maps.at(-1).id; renderExplorer(); };
   $("characterUpload").onchange = (event) => importCharacters(event.target.files);
   $("backHome").onclick = goHome;
-  $("resetScene").onclick = () => { state.x = 50; state.y = 68; setSceneZoom(140); };
+  $("resetScene").onclick = () => { state.x = 50; state.y = 68; setSceneZoom(currentMap().fit === "contain" ? 100 : 140); };
   $("zoomRange").oninput = (event) => setSceneZoom(+event.target.value);
   $("zoomOut").onclick = () => setSceneZoom(state.zoom - 10);
   $("zoomIn").onclick = () => setSceneZoom(state.zoom + 10);
+  $("mapFit").onchange = (event) => {
+    const map = currentMap();
+    map.fit = event.target.value;
+    if (map.fit === "contain") map.zoom = 100;
+    if (!map.builtIn) dbWrite("maps", map);
+    renderExplorer();
+  };
   $("characterSize").oninput = (event) => { state.size = +event.target.value; renderExplorer(); };
   $("movementSpeed").oninput = (event) => { state.speed = +event.target.value; $("speedValue").textContent = `${state.speed}%`; };
   $("devicePreset").onchange = (event) => { [state.width, state.height] = event.target.value.split("x").map(Number); renderExplorer(); };

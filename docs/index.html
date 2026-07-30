@@ -37,6 +37,13 @@
           <div class="zoom-control"><button id="zoomOut" type="button">-</button><input id="zoomRange" type="range" min="60" max="400" value="140"><button id="zoomIn" type="button">+</button></div>
         </div>
         <div class="control-group">
+          <div class="control-title"><span>地图显示</span><b id="fitValue">完整显示</b></div>
+          <select id="mapFit">
+            <option value="contain">完整显示</option>
+            <option value="cover">填满画布（会裁切）</option>
+          </select>
+        </div>
+        <div class="control-group">
           <div class="control-title"><span>手机分辨率</span><b id="resolutionLabel">720 × 1280</b></div>
           <select id="devicePreset">
             <option value="720x1280">默认竖屏 · 720 × 1280</option>
@@ -85,6 +92,6 @@
   </section>
 </main>
 <script src="./spine-player.js"></script>
-<script src="./app.js?v=20260730-10"></script>
+<script src="./app.js?v=20260730-11"></script>
 </body>
 </html>
