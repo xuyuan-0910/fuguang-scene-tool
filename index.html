@@ -25,6 +25,10 @@
 .size-input-group{display:flex;align-items:center;gap:6px}.control-group .size-input-group input{width:56px;margin:0;padding:4px 5px;border:1px solid var(--line);border-radius:6px;background:#fff;text-align:center;font-size:10px}.size-input-group b{white-space:nowrap}
 .building-preview.off-scene{opacity:.58}.building-status{position:absolute;left:3px;bottom:3px;padding:2px 4px;border-radius:4px;background:#243d4dcc;color:#fff;font-size:8px}.building-actions{display:grid;gap:7px;margin-top:12px}.building-actions button{padding:8px;border:1px solid var(--line);border-radius:7px;background:#edf5f8;color:var(--ink);font-size:10px;cursor:pointer}.building-actions button.danger{border-color:#d8b7b2;background:#f8ecea;color:#8b3d35}
 .side-map-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.side-map-list.scrollable{max-height:196px;overflow-y:auto;padding-right:4px;align-content:start}.side-map{position:relative;display:block;min-width:0;padding:6px}.side-map img,.side-map .mini-built-in{display:block;width:100%;height:64px}.side-map>span:nth-child(2){display:block;margin-top:5px;padding:0 2px;font-size:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.side-map-delete{position:absolute;right:9px;top:9px}.side-map-list.scrollable::-webkit-scrollbar{width:6px}.side-map-list.scrollable::-webkit-scrollbar-thumb{border-radius:6px;background:#b8c4c8}
+.explorer-layout{grid-template-columns:210px minmax(350px,1fr) 190px 220px 170px}.control-mode{display:grid;gap:9px}.control-mode button{width:100%;padding:11px 9px;border:1px solid var(--line);border-radius:9px;background:#f4f1ea;color:var(--ink);font-size:11px;cursor:pointer;text-align:left}.control-mode button::before{content:"";display:inline-block;width:8px;height:8px;margin-right:8px;border:2px solid #9da9ad;border-radius:50%;vertical-align:-1px}.control-mode button.active{border-color:var(--blue);background:#edf5fa;color:#225f87;font-weight:700}.control-mode button.active::before{border-color:var(--blue);background:var(--blue);box-shadow:inset 0 0 0 2px #fff}.operation-panel .tip-card{margin-top:16px}.joystick[hidden]{display:none}
+@media(max-width:1380px){.explorer-layout{grid-template-columns:200px minmax(340px,1fr) 185px 170px}.character-panel{display:none}}
+@media(max-width:980px){.explorer-layout{grid-template-columns:190px minmax(340px,1fr) 170px}.building-panel,.character-panel{display:none}}
+@media(max-width:720px){.explorer-layout{grid-template-columns:1fr}.map-panel{order:2}.stage-column{order:1}.operation-panel{order:3}.building-panel{display:block;order:4}.character-panel{display:none}}
 
 </style>
   <style>
@@ -498,7 +502,7 @@
           <div class="scene-hud"><span id="hudMapName">云隐山水</span><b>探索中</b></div>
           <div id="joystick" class="joystick" aria-label="角色移动摇杆"><div class="joystick-ring"></div><div id="knob" class="joystick-knob"></div></div>
         </div>
-        <p class="stage-help">在地图任意位置按住并拖动即可移动角色，松手停止</p>
+        <p id="movementHelp" class="stage-help">在地图任意位置按住并拖动即可移动角色，松手停止</p>
       </section>
 
       <aside class="tool-panel building-panel">
@@ -533,11 +537,20 @@
         </div>
         <div class="tip-card"><b>移动提示</b><p>角色会沿摇杆方向持续移动，向左时自动翻转。</p></div>
       </aside>
+
+      <aside class="tool-panel operation-panel">
+        <div class="panel-heading"><h3>操作栏</h3></div>
+        <div id="controlMode" class="control-mode" role="group" aria-label="角色移动方式">
+          <button type="button" data-control-mode="click">点击行走</button>
+          <button type="button" data-control-mode="joystick" class="active">摇杆行走</button>
+        </div>
+        <div class="tip-card"><b>当前操作</b><p id="controlModeHelp">在地图任意位置按住并拖动摇杆，角色会沿拖动方向持续行走。</p></div>
+      </aside>
     </div>
   </section>
 </main>
 <div id="dropOverlay" class="drop-overlay" aria-hidden="true"><div><b id="dropTitle">松开上传地图</b><span id="dropDescription">拖到手机地图画布内可添加为建筑</span></div></div>
 <script src="./spine-player.js?v=20260730-2"></script>
-<script src="./app.js?v=20260730-21"></script>
+<script src="./app.js?v=20260730-22"></script>
 </body>
 </html>

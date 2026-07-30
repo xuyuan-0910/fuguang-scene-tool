@@ -8,7 +8,7 @@ const state = {
     { id: "female", name: "小师妹", src: "./hero-female.png" },
   ],
   mapId: "default", characterId: "spine", width: 720, height: 1280,
-  zoom: 140, size: 96, speed: 100, x: 50, y: 68,
+  zoom: 140, size: 96, speed: 100, x: 50, y: 68, controlMode: "joystick",
 };
 
 let database;
@@ -19,6 +19,7 @@ let spinePlayer = null;
 let spineAnimation = "";
 let facing = "right";
 let stickOrigin = null;
+let clickTarget = null;
 let lastFrameTime = 0;
 let selectedBuildingId = null;
 let draggingBuildingId = null;
@@ -95,6 +96,41 @@ function setDirectionalAnimation(action) {
   const animation = directionalAnimations[`${action}-${facing}`];
   [$("stageCharacter"), $("spineCharacter")].forEach((node) => node.style.setProperty("--facing", animation.scaleX));
   setSpineAnimation(animation.clip);
+}
+
+function stopCharacterMovement() {
+  moving = false;
+  move = { x: 0, y: 0 };
+  stickOrigin = null;
+  clickTarget = null;
+  if (currentCharacter().spine && spineReady) setDirectionalAnimation("idle");
+  $("stageCharacter").classList.remove("is-walking");
+  $("spineCharacter").classList.remove("is-walking");
+  $("knob").style.transform = "translate(-50%, -50%)";
+  $("joystick").classList.remove("is-active");
+}
+
+function renderControlMode() {
+  document.querySelectorAll("[data-control-mode]").forEach((button) => {
+    const active = button.dataset.controlMode === state.controlMode;
+    button.classList.toggle("active", active);
+    button.setAttribute("aria-pressed", String(active));
+  });
+  const clickMode = state.controlMode === "click";
+  $("joystick").hidden = clickMode;
+  $("movementHelp").textContent = clickMode
+    ? "点击地图上的目标位置，角色会自动行走过去"
+    : "在地图任意位置按住并拖动即可移动角色，松手停止";
+  $("controlModeHelp").textContent = clickMode
+    ? "点击地图上的任意位置，角色会自动走向目标；再次点击可立即更换目标。"
+    : "在地图任意位置按住并拖动摇杆，角色会沿拖动方向持续行走。";
+}
+
+function setControlMode(mode) {
+  if (mode !== "click" && mode !== "joystick") return;
+  stopCharacterMovement();
+  state.controlMode = mode;
+  renderControlMode();
 }
 
 function renderGallery() {
@@ -213,7 +249,7 @@ function renderExplorer() {
   });
   renderBuildings();
   renderCamera();
-  renderSideMaps(); renderCharacters();
+  renderSideMaps(); renderCharacters(); renderControlMode();
 }
 
 function enterMap(id) {
@@ -445,6 +481,10 @@ function bindEvents() {
   $("characterSizeInput").onchange = (event) => { state.size = clamp(+event.target.value || 96, 48, 260); renderExplorer(); };
   $("characterSizeInput").onkeydown = (event) => { if (event.key === "Enter") event.target.blur(); };
   $("movementSpeed").oninput = (event) => { state.speed = +event.target.value; $("speedValue").textContent = `${state.speed}%`; };
+  $("controlMode").onclick = (event) => {
+    const button = event.target.closest("[data-control-mode]");
+    if (button) setControlMode(button.dataset.controlMode);
+  };
   $("devicePreset").onchange = (event) => { [state.width, state.height] = event.target.value.split("x").map(Number); renderExplorer(); };
   $("posX").onchange = (event) => { state.x = clamp(+event.target.value, 0, 100); renderExplorer(); };
   $("posY").onchange = (event) => { state.y = clamp(+event.target.value, 0, 100); renderExplorer(); };
@@ -484,6 +524,22 @@ function bindEvents() {
   frame.onpointerdown = (event) => {
     if (event.button !== undefined && event.button !== 0) return;
     event.preventDefault();
+    if (state.controlMode === "click") {
+      const rect = $("sceneBackground").getBoundingClientRect();
+      clickTarget = {
+        x: clamp((event.clientX - rect.left) / rect.width * 100, 4, 96),
+        y: clamp((event.clientY - rect.top) / rect.height * 100, 5, 95),
+      };
+      const dx = clickTarget.x - state.x;
+      const dy = clickTarget.y - state.y;
+      if (Math.hypot(dx, dy) < .2) return;
+      moving = true;
+      move = { x: dx, y: dy };
+      if (Math.abs(dx) > .08) facing = dx < 0 ? "left" : "right";
+      if (currentCharacter().spine && spineReady) setDirectionalAnimation("move");
+      else $("stageCharacter").classList.add("is-walking");
+      return;
+    }
     const rect = frame.getBoundingClientRect();
     stickOrigin = { x: event.clientX, y: event.clientY };
     const joystick = $("joystick");
@@ -501,20 +557,10 @@ function bindEvents() {
     frame.setPointerCapture(event.pointerId);
     updateStick(event);
   };
-  frame.onpointermove = (event) => { if (moving) updateStick(event); };
-  const stop = () => {
-    moving = false;
-    move = { x: 0, y: 0 };
-    stickOrigin = null;
-    if (currentCharacter().spine && spineReady) setDirectionalAnimation("idle");
-    $("stageCharacter").classList.remove("is-walking");
-    $("spineCharacter").classList.remove("is-walking");
-    $("knob").style.transform = "translate(-50%, -50%)";
-    $("joystick").classList.remove("is-active");
-  };
-  frame.onpointerup = stop;
-  frame.onpointercancel = stop;
-  frame.onlostpointercapture = () => { if (moving) stop(); };
+  frame.onpointermove = (event) => { if (state.controlMode === "joystick" && moving) updateStick(event); };
+  frame.onpointerup = () => { if (state.controlMode === "joystick") stopCharacterMovement(); };
+  frame.onpointercancel = () => { if (state.controlMode === "joystick") stopCharacterMovement(); };
+  frame.onlostpointercapture = () => { if (state.controlMode === "joystick" && moving) stopCharacterMovement(); };
   document.addEventListener("pointerdown", (event) => {
     if (!event.target.closest("[data-building-id], [data-building-select], #buildingConfig")) selectBuilding(null);
   });
@@ -575,7 +621,23 @@ function movementLoop(timestamp = 0) {
   lastFrameTime = timestamp;
   if (moving) {
     const distance = 24 * deltaSeconds * (state.speed / 100);
-    state.x = clamp(state.x + move.x * distance, 4, 96); state.y = clamp(state.y + move.y * distance, 5, 95);
+    if (state.controlMode === "click" && clickTarget) {
+      const dx = clickTarget.x - state.x;
+      const dy = clickTarget.y - state.y;
+      const remaining = Math.hypot(dx, dy);
+      if (remaining <= distance || remaining < .05) {
+        state.x = clickTarget.x;
+        state.y = clickTarget.y;
+        stopCharacterMovement();
+      } else {
+        move = { x: dx / remaining, y: dy / remaining };
+        state.x = clamp(state.x + move.x * distance, 4, 96);
+        state.y = clamp(state.y + move.y * distance, 5, 95);
+      }
+    } else {
+      state.x = clamp(state.x + move.x * distance, 4, 96);
+      state.y = clamp(state.y + move.y * distance, 5, 95);
+    }
     renderCamera();
     $("posX").value = Math.round(state.x); $("posY").value = Math.round(state.y);
   }
