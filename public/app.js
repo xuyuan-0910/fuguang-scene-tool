@@ -198,7 +198,7 @@ function deleteMap(id) {
 
 function setSceneZoom(value) {
   const map = currentMap();
-  map.zoom = clamp(value, 60, 400);
+  map.zoom = clamp(value, 60, 1000);
   state.zoom = map.zoom;
   renderExplorer();
 }
