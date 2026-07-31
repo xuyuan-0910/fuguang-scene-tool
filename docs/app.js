@@ -9,7 +9,7 @@ const state = {
     { id: "female", name: "小师妹", src: "./hero-female.png", builtIn: true },
   ],
   mapId: "default", characterId: "spine", width: 720, height: 1280,
-  zoom: 140, size: 96, speed: 100, x: 50, y: 68, controlMode: "joystick",
+  zoom: 140, size: 96, sizeWidth: 96, sizeHeight: 96, speed: 100, x: 50, y: 68, controlMode: "joystick",
 };
 
 let database;
@@ -85,7 +85,7 @@ function saveSceneSettings() {
   try {
     localStorage.setItem(SCENE_SETTINGS_KEY, JSON.stringify({
       mapId: state.mapId, characterId: state.characterId, width: state.width, height: state.height,
-      size: state.size, speed: state.speed, x: state.x, y: state.y, controlMode: state.controlMode,
+      size: state.size, sizeWidth: state.sizeWidth, sizeHeight: state.sizeHeight, speed: state.speed, x: state.x, y: state.y, controlMode: state.controlMode,
     }));
   } catch { /* Storage is unavailable: the current session still works. */ }
 }
@@ -95,6 +95,8 @@ function restoreSceneSettings() {
     const saved = JSON.parse(localStorage.getItem(SCENE_SETTINGS_KEY) || "null");
     if (!saved) return;
     ["width", "height", "size", "speed", "x", "y"].forEach((key) => { if (Number.isFinite(saved[key])) state[key] = saved[key]; });
+    state.sizeWidth = Number.isFinite(saved.sizeWidth) ? saved.sizeWidth : state.size;
+    state.sizeHeight = Number.isFinite(saved.sizeHeight) ? saved.sizeHeight : state.size;
     if (["click", "joystick"].includes(saved.controlMode)) state.controlMode = saved.controlMode;
     state.mapId = state.maps.some((map) => map.id === saved.mapId) ? saved.mapId : state.maps[0]?.id || null;
     state.characterId = state.characters.some((character) => character.id === saved.characterId) ? saved.characterId : state.characters[0]?.id || "";
@@ -186,7 +188,7 @@ function renderSideMaps() {
 
 function renderCharacters() {
   $("characterList").innerHTML = state.characters.length ? state.characters.map((character) => {
-    const preview = character.spine ? '<span class="spine-preview">SPINE</span>' : `<img src="${assetUrl(character)}" alt="">`;
+    const preview = character.customSpine ? '<span class="spine-preview">SPINE</span>' : `<img src="${assetUrl(character)}" alt="">`;
     return `<div class="character-option ${character.id === state.characterId ? "active" : ""}" data-character-id="${character.id}" role="button" tabindex="0">${preview}<span>${character.name}</span><button class="character-delete" type="button" data-delete-character="${character.id}" aria-label="删除角色 ${character.name}" title="删除角色">×</button></div>`;
   }).join("") : '<p class="character-empty">暂无角色</p>';
 }
@@ -274,9 +276,10 @@ function renderExplorer() {
   $("fitValue").textContent = map.fit === "contain" ? "完整显示" : "填满裁切";
   $("zoomValue").textContent = `${state.zoom}%`;
   $("zoomRange").value = state.zoom;
-  $("sizeValue").textContent = `${state.size} × ${state.size}`;
+  $("sizeValue").textContent = `${state.sizeWidth} × ${state.sizeHeight}`;
   $("characterSize").value = state.size;
-  $("characterSizeInput").value = state.size;
+  $("characterSizeInput").value = state.sizeWidth;
+  $("characterHeightInput").value = state.sizeHeight;
   $("speedValue").textContent = `${state.speed}%`;
   $("movementSpeed").value = state.speed;
   $("resolutionLabel").textContent = `${state.width} × ${state.height}`;
@@ -290,9 +293,10 @@ function renderExplorer() {
   $("deviceFrame").style.aspectRatio = `${state.width} / ${state.height}`;
   $("deviceFrame").style.width = aspect > .8 ? "min(62vh, 520px)" : "min(48vh, 390px)";
   const displayScale = $("deviceFrame").clientWidth / state.width || 1;
-  const renderedSize = state.size * displayScale;
+  const renderedWidth = state.sizeWidth * displayScale;
+  const renderedHeight = state.sizeHeight * displayScale;
   [$("stageCharacter"), $("spineCharacter")].forEach((node) => {
-    node.style.width = `${renderedSize}px`; node.style.height = `${renderedSize}px`;
+    node.style.width = `${renderedWidth}px`; node.style.height = `${renderedHeight}px`;
   });
   renderBuildings();
   renderCamera();
@@ -590,9 +594,11 @@ function bindEvents() {
     dbWrite("maps", map); saveSceneSettings();
     renderExplorer();
   };
-  $("characterSize").oninput = (event) => { state.size = +event.target.value; saveSceneSettings(); renderExplorer(); };
-  $("characterSizeInput").onchange = (event) => { state.size = clamp(+event.target.value || 96, 48, 260); saveSceneSettings(); renderExplorer(); };
+  $("characterSize").oninput = (event) => { state.size = +event.target.value; state.sizeWidth = state.size; state.sizeHeight = state.size; saveSceneSettings(); renderExplorer(); };
+  $("characterSizeInput").onchange = (event) => { state.sizeWidth = clamp(+event.target.value || 96, 20, 600); state.size = state.sizeWidth; saveSceneSettings(); renderExplorer(); };
+  $("characterHeightInput").onchange = (event) => { state.sizeHeight = clamp(+event.target.value || 96, 20, 600); saveSceneSettings(); renderExplorer(); };
   $("characterSizeInput").onkeydown = (event) => { if (event.key === "Enter") event.target.blur(); };
+  $("characterHeightInput").onkeydown = (event) => { if (event.key === "Enter") event.target.blur(); };
   $("movementSpeed").oninput = (event) => { state.speed = +event.target.value; $("speedValue").textContent = `${state.speed}%`; saveSceneSettings(); };
   $("controlMode").onclick = (event) => {
     const button = event.target.closest("[data-control-mode]");
