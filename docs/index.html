@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
   <title>浮光造境 · 地图角色模拟器</title>
   <meta name="description" content="管理地图，并在手机画布中模拟角色移动">
-  <link rel="stylesheet" href="./styles.css?v=20260730-13">
+  <link rel="stylesheet" href="./styles.css?v=20260731-1">
   <link rel="stylesheet" href="./spine-player.css">
 </head>
 <body>
@@ -87,7 +87,7 @@
       </aside>
 
       <aside class="tool-panel character-panel">
-        <div class="panel-heading"><h3>角色设置</h3><label>上传<input id="characterUpload" type="file" accept="image/*" multiple></label></div>
+        <div class="panel-heading"><h3>角色设置</h3><span class="character-upload-actions"><label>图片<input id="characterUpload" type="file" accept="image/*" multiple></label><label>Spine<input id="spineUpload" type="file" accept=".skel,.json,.atlas,image/png,image/webp" multiple></label></span></div>
         <div id="characterList" class="character-list"></div>
           <div class="control-group">
             <div class="control-title"><span>角色尺寸</span><span class="size-input-group"><input id="characterSizeInput" type="number" min="48" max="260" step="1" value="96" aria-label="输入角色尺寸"><b id="sizeValue">96 × 96</b></span></div>
@@ -101,7 +101,7 @@
           <label>X 坐标<input id="posX" type="number" value="50" min="0" max="100"></label>
           <label>Y 坐标<input id="posY" type="number" value="68" min="0" max="100"></label>
         </div>
-        <div class="tip-card"><b>移动提示</b><p>角色会沿摇杆方向持续移动，向左时自动翻转。</p></div>
+        <div class="tip-card"><b>移动提示</b><p>图片角色可直接上传；Spine 请一次选中同一套 .skel/.json、.atlas 和贴图 PNG 文件。</p></div>
       </aside>
 
       <aside class="tool-panel operation-panel">
@@ -117,6 +117,6 @@
 </main>
 <div id="dropOverlay" class="drop-overlay" aria-hidden="true"><div><b id="dropTitle">松开上传地图</b><span id="dropDescription">拖到手机地图画布内可添加为建筑</span></div></div>
   <script src="./spine-player.js?v=20260730-3"></script>
-<script src="./app.js?v=20260730-23"></script>
+<script src="./app.js?v=20260731-1"></script>
 </body>
 </html>

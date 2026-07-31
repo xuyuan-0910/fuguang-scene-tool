@@ -1,11 +1,12 @@
 const $ = (id) => document.getElementById(id);
 const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
 const MAX_UPLOAD_BYTES = 100 * 1024 * 1024;
+const SCENE_SETTINGS_KEY = "fuguang-scene-settings-v2";
 const state = {
   maps: [{ id: "default", name: "云隐山水", builtIn: true, width: 720, height: 1280, zoom: 140, fit: "cover" }],
   characters: [
-    { id: "spine", name: "剑侠", src: "./hero-male.png", spine: true },
-    { id: "female", name: "小师妹", src: "./hero-female.png" },
+    { id: "spine", name: "剑侠", src: "./hero-male.png", spine: true, builtIn: true },
+    { id: "female", name: "小师妹", src: "./hero-female.png", builtIn: true },
   ],
   mapId: "default", characterId: "spine", width: 720, height: 1280,
   zoom: 140, size: 96, speed: 100, x: 50, y: 68, controlMode: "joystick",
@@ -17,6 +18,8 @@ let moving = false;
 let spineReady = false;
 let spinePlayer = null;
 let spineAnimation = "";
+let loadedSpineCharacterId = "";
+let spineLoadNonce = 0;
 let facing = "right";
 let stickOrigin = null;
 let clickTarget = null;
@@ -76,10 +79,30 @@ function assetUrl(item) {
 }
 
 function currentMap() { return state.maps.find((item) => item.id === state.mapId) || state.maps[0]; }
-function currentCharacter() { return state.characters.find((item) => item.id === state.characterId) || state.characters[0]; }
+function currentCharacter() { return state.characters.find((item) => item.id === state.characterId) || state.characters[0] || { id: "", name: "", src: "" }; }
+
+function saveSceneSettings() {
+  try {
+    localStorage.setItem(SCENE_SETTINGS_KEY, JSON.stringify({
+      mapId: state.mapId, characterId: state.characterId, width: state.width, height: state.height,
+      size: state.size, speed: state.speed, x: state.x, y: state.y, controlMode: state.controlMode,
+    }));
+  } catch { /* Storage is unavailable: the current session still works. */ }
+}
+
+function restoreSceneSettings() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(SCENE_SETTINGS_KEY) || "null");
+    if (!saved) return;
+    ["width", "height", "size", "speed", "x", "y"].forEach((key) => { if (Number.isFinite(saved[key])) state[key] = saved[key]; });
+    if (["click", "joystick"].includes(saved.controlMode)) state.controlMode = saved.controlMode;
+    state.mapId = state.maps.some((map) => map.id === saved.mapId) ? saved.mapId : state.maps[0]?.id || null;
+    state.characterId = state.characters.some((character) => character.id === saved.characterId) ? saved.characterId : state.characters[0]?.id || "";
+  } catch { /* Ignore malformed old settings. */ }
+}
 
 function setSpineAnimation(name) {
-  if (!spineReady || !spinePlayer || spineAnimation === name) return;
+  if (!name || !spineReady || !spinePlayer || spineAnimation === name) return;
   spinePlayer.setAnimation?.(name);
   spinePlayer.play?.();
   spineAnimation = name;
@@ -95,7 +118,10 @@ const directionalAnimations = {
 function setDirectionalAnimation(action) {
   const animation = directionalAnimations[`${action}-${facing}`];
   [$("stageCharacter"), $("spineCharacter")].forEach((node) => node.style.setProperty("--facing", animation.scaleX));
-  setSpineAnimation(animation.clip);
+  const character = currentCharacter();
+  const clips = character.spineAnimations || [];
+  const preferred = [`${action}-${facing}`, action, `idle-${facing}`, "idle", clips[0]].find((clip) => !clips.length || clips.includes(clip));
+  setSpineAnimation(character.customSpine ? preferred : animation.clip);
 }
 
 function stopCharacterMovement() {
@@ -108,6 +134,7 @@ function stopCharacterMovement() {
   $("spineCharacter").classList.remove("is-walking");
   $("knob").style.transform = "translate(-50%, -50%)";
   $("joystick").classList.remove("is-active");
+  saveSceneSettings();
 }
 
 function renderControlMode() {
@@ -130,6 +157,7 @@ function setControlMode(mode) {
   if (mode !== "click" && mode !== "joystick") return;
   stopCharacterMovement();
   state.controlMode = mode;
+  saveSceneSettings();
   renderControlMode();
 }
 
@@ -140,8 +168,9 @@ function renderGallery() {
       ? '<div class="map-cover built-in-cover"><i></i><i></i><i></i></div>'
       : `<img class="map-cover" src="${assetUrl(map)}" alt="${map.name}">`;
     const remove = `<button class="map-delete" type="button" data-delete-map="${map.id}" aria-label="删除场景 ${map.name}" title="删除场景">×</button>`;
-    return `<article class="map-tile" data-map-id="${map.id}" tabindex="0">${preview}<span class="map-tile-info"><b>${map.name}</b><small>${map.width} × ${map.height}</small></span><i class="enter-mark">进入</i>${remove}</article>`;
-  }).join("") + '<label class="map-tile add-map-tile"><span>＋</span><b>上传新地图</b><small>PNG / JPG / WEBP · 最大 100MB</small><input id="galleryMapUpload" type="file" accept="image/*" multiple></label>';
+    const shortName = Array.from(map.name).length > 12 ? `${Array.from(map.name).slice(0, 12).join("")}…` : map.name;
+    return `<article class="map-tile" data-map-id="${map.id}" tabindex="0">${preview}<span class="map-tile-info"><b title="${map.name}">${shortName}</b><small>${map.width} × ${map.height}</small></span><i class="enter-mark">进入</i>${remove}</article>`;
+  }).join("") + '<label class="map-tile add-map-tile"><span class="add-map-title"><i>＋</i><b>上传新地图</b></span><small><span>PNG / JPG / WEBP</span><span>最大 100MB</span></small><input id="galleryMapUpload" type="file" accept="image/*" multiple></label>';
   $("mapCount").textContent = state.maps.length;
   $("galleryMapUpload").onchange = (event) => importMaps(event.target.files);
 }
@@ -156,9 +185,10 @@ function renderSideMaps() {
 }
 
 function renderCharacters() {
-  $("characterList").innerHTML = state.characters.map((character) =>
-    `<button class="character-option ${character.id === state.characterId ? "active" : ""}" data-character-id="${character.id}"><img src="${assetUrl(character)}" alt=""><span>${character.name}</span></button>`
-  ).join("");
+  $("characterList").innerHTML = state.characters.length ? state.characters.map((character) => {
+    const preview = character.spine ? '<span class="spine-preview">SPINE</span>' : `<img src="${assetUrl(character)}" alt="">`;
+    return `<div class="character-option ${character.id === state.characterId ? "active" : ""}" data-character-id="${character.id}" role="button" tabindex="0">${preview}<span>${character.name}</span><button class="character-delete" type="button" data-delete-character="${character.id}" aria-label="删除角色 ${character.name}" title="删除角色">×</button></div>`;
+  }).join("") : '<p class="character-empty">暂无角色</p>';
 }
 
 function renderBuildings() {
@@ -232,6 +262,7 @@ function refreshHighResolutionRendering() {
 function renderExplorer() {
   const map = currentMap();
   const character = currentCharacter();
+  ensureSpineCharacter(character);
   $("currentMapName").textContent = map.name;
   $("hudMapName").textContent = map.name;
   $("builtIn").hidden = !map.builtIn;
@@ -253,8 +284,8 @@ function renderExplorer() {
   $("posX").value = Math.round(state.x);
   $("posY").value = Math.round(state.y);
   $("stageCharacter").src = assetUrl(character);
-  $("stageCharacter").hidden = character.spine && spineReady;
-  $("spineCharacter").hidden = !character.spine || !spineReady;
+  $("stageCharacter").hidden = !character.id || (character.spine && spineReady);
+  $("spineCharacter").hidden = !character.id || !character.spine || !spineReady;
   const aspect = state.width / state.height;
   $("deviceFrame").style.aspectRatio = `${state.width} / ${state.height}`;
   $("deviceFrame").style.width = aspect > .8 ? "min(62vh, 520px)" : "min(48vh, 390px)";
@@ -274,6 +305,7 @@ function enterMap(id) {
   $("homeView").hidden = true;
   $("explorerView").hidden = false;
   renderExplorer();
+  saveSceneSettings();
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
@@ -301,6 +333,7 @@ function setSceneZoom(value) {
   const map = currentMap();
   map.zoom = clamp(value, 60, 1000);
   state.zoom = map.zoom;
+  dbWrite("maps", map); saveSceneSettings();
   renderExplorer();
 }
 
@@ -411,31 +444,88 @@ async function importCharacters(fileList) {
     const character = { id: `character-${Date.now()}-${Math.random().toString(16).slice(2)}`, name: file.name.replace(/\.[^.]+$/, ""), blob: file, width: info.width, height: info.height, createdAt: Date.now() };
     state.characters.push(character); state.characterId = character.id; dbWrite("characters", character);
   }
-  renderExplorer();
+  saveSceneSettings(); renderExplorer();
 }
 
-function initSpine() {
-  if (!window.spine?.SpinePlayer) return;
+function deleteCharacter(id) {
+  const character = state.characters.find((item) => item.id === id);
+  if (!character || !window.confirm(`确定删除角色“${character.name}”吗？`)) return;
+  if (character.src?.startsWith("blob:")) URL.revokeObjectURL(character.src);
+  state.characters = state.characters.filter((item) => item.id !== id);
+  dbDelete("characters", id);
+  if (character.builtIn) {
+    const deleted = new Set(JSON.parse(localStorage.getItem("fuguang-deleted-built-in-characters") || "[]"));
+    deleted.add(id);
+    localStorage.setItem("fuguang-deleted-built-in-characters", JSON.stringify([...deleted]));
+  }
+  if (state.characterId === id) state.characterId = state.characters[0]?.id || "";
+  saveSceneSettings(); renderExplorer();
+}
+
+function dataUrl(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = () => reject(reader.error);
+    reader.readAsDataURL(file);
+  });
+}
+
+async function importSpineCharacter(fileList) {
+  const files = [...(fileList || [])];
+  const skeleton = files.find((file) => /\.(skel|json)$/i.test(file.name));
+  const atlas = files.find((file) => /\.atlas$/i.test(file.name));
+  const textures = files.filter((file) => /^image\//.test(file.type) || /\.(png|webp)$/i.test(file.name));
+  if (!skeleton || !atlas || !textures.length) {
+    window.alert("请一次选择 Spine 的 .skel 或 .json、.atlas，以及至少一张 PNG/WebP 贴图。");
+    return;
+  }
+  if (files.some((file) => file.size > MAX_UPLOAD_BYTES)) { window.alert("Spine 文件单个最大 100MB。"); return; }
+  const character = {
+    id: `spine-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+    name: skeleton.name.replace(/\.(skel|json)$/i, ""), spine: true, customSpine: true,
+    skeletonName: skeleton.name, atlasName: atlas.name,
+    spineFiles: files.map((file) => ({ name: file.name, blob: file })), createdAt: Date.now(),
+  };
+  state.characters.push(character); state.characterId = character.id;
+  dbWrite("characters", character); saveSceneSettings(); renderExplorer();
+}
+
+async function ensureSpineCharacter(character = currentCharacter()) {
+  if (!character?.spine || !window.spine?.SpinePlayer || loadedSpineCharacterId === character.id) return;
+  const requestId = ++spineLoadNonce;
+  loadedSpineCharacterId = character.id;
+  spineReady = false;
+  spineAnimation = "";
+  try { spinePlayer?.stopRendering?.(); spinePlayer?.dom?.remove(); } catch { /* Replace the previous player safely. */ }
+  $("spinePlayer").replaceChildren();
   try {
-    spinePlayer = new spine.SpinePlayer("spinePlayer", {
-      skelUrl: "./player.skel",
-      atlasUrl: "./player.atlas",
-      animation: "idle-right",
-      showControls: false,
-      showLoading: false,
-      alpha: true,
-      backgroundColor: "#00000000",
-      premultipliedAlpha: false,
+    const rawDataURIs = character.customSpine ? Object.fromEntries(await Promise.all((character.spineFiles || []).map(async (entry) => [entry.name, await dataUrl(entry.blob)]))) : undefined;
+    if (requestId !== spineLoadNonce || currentCharacter().id !== character.id) return;
+    const config = {
+      atlasUrl: character.customSpine ? character.atlasName : "./player.atlas",
+      showControls: false, showLoading: false, alpha: true, backgroundColor: "#00000000", premultipliedAlpha: false,
+      rawDataURIs,
       success(player) {
-        spinePlayer = player;
-        spineReady = true;
-        spineAnimation = "";
+        if (requestId !== spineLoadNonce || currentCharacter().id !== character.id) return;
+        spinePlayer = player; spineReady = true; spineAnimation = "";
+        if (character.customSpine) {
+          character.spineAnimations = player.skeleton?.data?.animations?.map((animation) => animation.name) || [];
+          dbWrite("characters", character);
+        }
         setDirectionalAnimation(moving ? "move" : "idle");
         if (state.maps.length) renderExplorer();
       },
-    });
+      error() { if (requestId === spineLoadNonce) { spineReady = false; } },
+    };
+    if (character.customSpine && /\.json$/i.test(character.skeletonName)) config.jsonUrl = character.skeletonName;
+    else config.skelUrl = character.customSpine ? character.skeletonName : "./player.skel";
+    if (!character.customSpine) config.animation = "idle-right";
+    spinePlayer = new spine.SpinePlayer("spinePlayer", config);
   } catch { spineReady = false; }
 }
+
+function initSpine() { ensureSpineCharacter(); }
 
 function updateStick(event) {
   if (!stickOrigin) return;
@@ -455,9 +545,14 @@ function updateStick(event) {
 
 function bindEvents() {
   $("mapGallery").onclick = (event) => { const remove = event.target.closest("[data-delete-map]"); if (remove) { event.stopPropagation(); deleteMap(remove.dataset.deleteMap); return; } const card = event.target.closest("[data-map-id]"); if (card) enterMap(card.dataset.mapId); };
-  $("sideMapList").onclick = (event) => { const remove = event.target.closest("[data-delete-map]"); if (remove) { event.stopPropagation(); deleteMap(remove.dataset.deleteMap); return; } const card = event.target.closest("[data-map-id]"); if (card) { state.mapId = card.dataset.mapId; renderExplorer(); } };
-  $("characterList").onclick = (event) => { const card = event.target.closest("[data-character-id]"); if (card) { state.characterId = card.dataset.characterId; renderExplorer(); } };
-  $("sideMapUpload").onchange = async (event) => { await importMaps(event.target.files); state.mapId = state.maps.at(-1).id; renderExplorer(); };
+  $("sideMapList").onclick = (event) => { const remove = event.target.closest("[data-delete-map]"); if (remove) { event.stopPropagation(); deleteMap(remove.dataset.deleteMap); return; } const card = event.target.closest("[data-map-id]"); if (card) { state.mapId = card.dataset.mapId; saveSceneSettings(); renderExplorer(); } };
+  $("characterList").onclick = (event) => {
+    const remove = event.target.closest("[data-delete-character]");
+    if (remove) { event.stopPropagation(); deleteCharacter(remove.dataset.deleteCharacter); return; }
+    const card = event.target.closest("[data-character-id]");
+    if (card) { state.characterId = card.dataset.characterId; saveSceneSettings(); renderExplorer(); }
+  };
+  $("sideMapUpload").onchange = async (event) => { await importMaps(event.target.files); state.mapId = state.maps.at(-1).id; saveSceneSettings(); renderExplorer(); };
   $("buildingUpload").onchange = async (event) => {
     const offsets = [[-12, -10], [12, -10], [-12, 8], [12, 8], [0, -18], [0, 16]];
     const offset = offsets[(currentMap().buildings?.length || 0) % offsets.length];
@@ -481,9 +576,10 @@ function bindEvents() {
     if (!selectedBuildingId) return;
     if (window.confirm("确定从建筑栏彻底删除这个建筑吗？")) deleteBuildingFromLibrary(selectedBuildingId);
   };
-  $("characterUpload").onchange = (event) => importCharacters(event.target.files);
+  $("characterUpload").onchange = async (event) => { await importCharacters(event.target.files); event.target.value = ""; };
+  $("spineUpload").onchange = async (event) => { await importSpineCharacter(event.target.files); event.target.value = ""; };
   $("backHome").onclick = goHome;
-  $("resetScene").onclick = () => { state.x = 50; state.y = 68; setSceneZoom(currentMap().fit === "contain" ? 100 : 140); };
+  $("resetScene").onclick = () => { state.x = 50; state.y = 68; setSceneZoom(currentMap().fit === "contain" ? 100 : 140); saveSceneSettings(); };
   $("zoomRange").oninput = (event) => setSceneZoom(+event.target.value);
   $("zoomOut").onclick = () => setSceneZoom(state.zoom - 10);
   $("zoomIn").onclick = () => setSceneZoom(state.zoom + 10);
@@ -491,20 +587,20 @@ function bindEvents() {
     const map = currentMap();
     map.fit = event.target.value;
     if (map.fit === "contain") map.zoom = 100;
-    if (!map.builtIn) dbWrite("maps", map);
+    dbWrite("maps", map); saveSceneSettings();
     renderExplorer();
   };
-  $("characterSize").oninput = (event) => { state.size = +event.target.value; renderExplorer(); };
-  $("characterSizeInput").onchange = (event) => { state.size = clamp(+event.target.value || 96, 48, 260); renderExplorer(); };
+  $("characterSize").oninput = (event) => { state.size = +event.target.value; saveSceneSettings(); renderExplorer(); };
+  $("characterSizeInput").onchange = (event) => { state.size = clamp(+event.target.value || 96, 48, 260); saveSceneSettings(); renderExplorer(); };
   $("characterSizeInput").onkeydown = (event) => { if (event.key === "Enter") event.target.blur(); };
-  $("movementSpeed").oninput = (event) => { state.speed = +event.target.value; $("speedValue").textContent = `${state.speed}%`; };
+  $("movementSpeed").oninput = (event) => { state.speed = +event.target.value; $("speedValue").textContent = `${state.speed}%`; saveSceneSettings(); };
   $("controlMode").onclick = (event) => {
     const button = event.target.closest("[data-control-mode]");
     if (button) setControlMode(button.dataset.controlMode);
   };
-  $("devicePreset").onchange = (event) => { [state.width, state.height] = event.target.value.split("x").map(Number); renderExplorer(); };
-  $("posX").onchange = (event) => { state.x = clamp(+event.target.value, 0, 100); renderExplorer(); };
-  $("posY").onchange = (event) => { state.y = clamp(+event.target.value, 0, 100); renderExplorer(); };
+  $("devicePreset").onchange = (event) => { [state.width, state.height] = event.target.value.split("x").map(Number); saveSceneSettings(); renderExplorer(); };
+  $("posX").onchange = (event) => { state.x = clamp(+event.target.value, 0, 100); saveSceneSettings(); renderExplorer(); };
+  $("posY").onchange = (event) => { state.y = clamp(+event.target.value, 0, 100); saveSceneSettings(); renderExplorer(); };
   const buildingLayer = $("buildingLayer");
   buildingLayer.onpointerdown = (event) => {
     const building = event.target.closest("[data-building-id]");
@@ -664,7 +760,9 @@ function movementLoop(timestamp = 0) {
 async function start() {
   try {
     const defaultDeleted = localStorage.getItem("fuguang-default-map-deleted") === "1";
+    const deletedCharacters = new Set(JSON.parse(localStorage.getItem("fuguang-deleted-built-in-characters") || "[]"));
     if (defaultDeleted) state.maps = state.maps.filter((map) => !map.builtIn);
+    state.characters = state.characters.filter((character) => !deletedCharacters.has(character.id));
     await openDatabase();
     const [maps, characters] = await Promise.all([dbRead("maps"), dbRead("characters")]);
     maps.forEach((map) => {
@@ -675,6 +773,7 @@ async function start() {
       if (existing) Object.assign(existing, map); else state.maps.push(map);
     });
     state.characters.push(...characters.map((character) => { delete character.src; return character; }));
+    restoreSceneSettings();
   } catch { /* IndexedDB unavailable: the current session still works. */ }
   bindEvents(); bindMapDrop(); renderGallery(); if (state.maps.length) renderExplorer(); initSpine(); movementLoop();
 }
