@@ -264,7 +264,7 @@ function refreshHighResolutionRendering() {
 function renderExplorer() {
   const map = currentMap();
   const character = currentCharacter();
-  ensureSpineCharacter(character);
+  if (!$("explorerView").hidden && character.spine) ensureSpineCharacter(character);
   $("currentMapName").textContent = map.name;
   $("hudMapName").textContent = map.name;
   $("builtIn").hidden = !map.builtIn;
@@ -529,7 +529,7 @@ async function ensureSpineCharacter(character = currentCharacter()) {
   } catch { spineReady = false; }
 }
 
-function initSpine() { ensureSpineCharacter(); }
+function initSpine() { /* Spine is loaded only after the user opens a scene. */ }
 
 function updateStick(event) {
   if (!stickOrigin) return;
@@ -781,7 +781,7 @@ async function start() {
     state.characters.push(...characters.map((character) => { delete character.src; return character; }));
     restoreSceneSettings();
   } catch { /* IndexedDB unavailable: the current session still works. */ }
-  bindEvents(); bindMapDrop(); renderGallery(); if (state.maps.length) renderExplorer(); initSpine(); movementLoop();
+  bindEvents(); bindMapDrop(); renderGallery(); initSpine(); movementLoop();
 }
 
 start();
