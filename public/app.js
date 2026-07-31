@@ -276,8 +276,7 @@ function renderExplorer() {
   $("fitValue").textContent = map.fit === "contain" ? "完整显示" : "填满裁切";
   $("zoomValue").textContent = `${state.zoom}%`;
   $("zoomRange").value = state.zoom;
-  $("sizeValue").textContent = `${state.sizeWidth} × ${state.sizeHeight}`;
-  $("characterSize").value = state.size;
+  $("characterSize").value = clamp(state.size, 48, 260);
   $("characterSizeInput").value = state.sizeWidth;
   $("characterHeightInput").value = state.sizeHeight;
   $("speedValue").textContent = `${state.speed}%`;
@@ -595,8 +594,8 @@ function bindEvents() {
     renderExplorer();
   };
   $("characterSize").oninput = (event) => { state.size = +event.target.value; state.sizeWidth = state.size; state.sizeHeight = state.size; saveSceneSettings(); renderExplorer(); };
-  $("characterSizeInput").onchange = (event) => { state.sizeWidth = clamp(+event.target.value || 96, 20, 600); state.size = state.sizeWidth; saveSceneSettings(); renderExplorer(); };
-  $("characterHeightInput").onchange = (event) => { state.sizeHeight = clamp(+event.target.value || 96, 20, 600); saveSceneSettings(); renderExplorer(); };
+  $("characterSizeInput").onchange = (event) => { state.sizeWidth = clamp(+event.target.value || 96, 20, 600); state.size = clamp(state.sizeWidth, 48, 260); saveSceneSettings(); renderExplorer(); };
+  $("characterHeightInput").onchange = (event) => { state.sizeHeight = clamp(+event.target.value || 96, 20, 600); state.size = clamp(Math.round((state.sizeWidth + state.sizeHeight) / 2), 48, 260); saveSceneSettings(); renderExplorer(); };
   $("characterSizeInput").onkeydown = (event) => { if (event.key === "Enter") event.target.blur(); };
   $("characterHeightInput").onkeydown = (event) => { if (event.key === "Enter") event.target.blur(); };
   $("movementSpeed").oninput = (event) => { state.speed = +event.target.value; $("speedValue").textContent = `${state.speed}%`; saveSceneSettings(); };
