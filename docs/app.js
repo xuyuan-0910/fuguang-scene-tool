@@ -821,8 +821,8 @@ function bindEvents() {
     if (state.controlMode === "click") {
       const rect = $("sceneBackground").getBoundingClientRect();
       clickTarget = {
-        x: clamp((event.clientX - rect.left) / rect.width * 100, 4, 96),
-        y: clamp((event.clientY - rect.top) / rect.height * 100, 5, 95),
+        x: clamp((event.clientX - rect.left) / rect.width * 100, 0, 100),
+        y: clamp((event.clientY - rect.top) / rect.height * 100, 0, 100),
       };
       const dx = clickTarget.x - state.x;
       const dy = clickTarget.y - state.y;
@@ -925,12 +925,12 @@ function movementLoop(timestamp = 0) {
         stopCharacterMovement();
       } else {
         move = { x: dx / remaining, y: dy / remaining };
-        state.x = clamp(state.x + move.x * distance, 4, 96);
-        state.y = clamp(state.y + move.y * distance, 5, 95);
+        state.x = clamp(state.x + move.x * distance, 0, 100);
+        state.y = clamp(state.y + move.y * distance, 0, 100);
       }
     } else {
-      state.x = clamp(state.x + move.x * distance, 4, 96);
-      state.y = clamp(state.y + move.y * distance, 5, 95);
+      state.x = clamp(state.x + move.x * distance, 0, 100);
+      state.y = clamp(state.y + move.y * distance, 0, 100);
     }
     renderCamera();
     $("posX").value = Math.round(state.x); $("posY").value = Math.round(state.y);
