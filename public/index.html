@@ -37,10 +37,10 @@
           <div class="zoom-control"><button id="zoomOut" type="button">-</button><input id="zoomRange" type="range" min="60" max="1000" value="140"><button id="zoomIn" type="button">+</button></div>
         </div>
         <div class="control-group">
-          <div class="control-title"><span>地图显示</span><b id="fitValue">完整显示</b></div>
+          <div class="control-title"><span>地图显示</span><b id="fitValue">探索显示</b></div>
           <select id="mapFit">
-            <option value="contain">完整显示</option>
-            <option value="cover">填满画布（会裁切）</option>
+            <option value="cover">探索显示（不缩小）</option>
+            <option value="contain">整图预览（缩小显示）</option>
           </select>
         </div>
         <div class="control-group">
@@ -128,6 +128,6 @@
 </main>
 <div id="dropOverlay" class="drop-overlay" aria-hidden="true"><div><b id="dropTitle">松开上传地图</b><span id="dropDescription">拖到手机地图画布内可添加为建筑</span></div></div>
   <script src="./spine-player.js?v=20260730-3"></script>
-<script src="./app.js?v=20260813-1"></script>
+<script src="./app.js?v=20260813-2"></script>
 </body>
 </html>

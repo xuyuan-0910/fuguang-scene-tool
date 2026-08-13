@@ -321,11 +321,11 @@ function renderExplorer() {
   $("hudMapName").textContent = map.name;
   $("builtIn").hidden = !map.builtIn;
   $("sceneBackground").style.backgroundImage = map.builtIn ? "" : `url("${assetUrl(map)}")`;
-  map.fit ??= map.builtIn ? "cover" : "contain";
-  state.zoom = map.zoom ?? (map.builtIn ? 140 : 100);
+  map.fit ??= "cover";
+  state.zoom = map.zoom ?? 140;
   $("sceneBackground").style.backgroundSize = map.fit;
   $("mapFit").value = map.fit;
-  $("fitValue").textContent = map.fit === "contain" ? "完整显示" : "填满裁切";
+  $("fitValue").textContent = map.fit === "contain" ? "整图预览" : "探索显示";
   $("zoomValue").textContent = `${state.zoom}%`;
   $("zoomRange").value = state.zoom;
   $("characterSize").value = clamp(state.size, 48, 260);
@@ -412,7 +412,7 @@ async function importMaps(fileList) {
       continue;
     }
     const info = await imageInfo(file);
-    const map = { id: `map-${Date.now()}-${Math.random().toString(16).slice(2)}`, name: file.name.replace(/\.[^.]+$/, ""), blob: file, width: info.width, height: info.height, zoom: 100, fit: "contain", createdAt: Date.now() };
+    const map = { id: `map-${Date.now()}-${Math.random().toString(16).slice(2)}`, name: file.name.replace(/\.[^.]+$/, ""), blob: file, width: info.width, height: info.height, zoom: 140, fit: "cover", createdAt: Date.now() };
     state.maps.push(map); dbWrite("maps", map);
   }
   renderGallery(); renderSideMaps();
