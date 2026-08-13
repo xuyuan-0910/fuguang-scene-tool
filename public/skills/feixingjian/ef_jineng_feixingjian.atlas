@@ -1,0 +1,20 @@
+
+ef_jineng_feixingjian.png
+size: 360,105
+format: RGBA8888
+filter: Linear,Linear
+repeat: none
+images/jian_13
+  rotate: true
+  xy: 2, 15
+  size: 88, 208
+  orig: 254, 345
+  offset: 83, 74
+  index: -1
+images/jian_13add
+  rotate: true
+  xy: 212, 2
+  size: 101, 146
+  orig: 127, 173
+  offset: 13, 15
+  index: -1

@@ -64,6 +64,7 @@
             </div>
             <img id="stageCharacter" class="stage-character" src="./hero-male.png" alt="当前角色">
             <div id="spineCharacter" class="stage-character spine-character" hidden><div id="spinePlayer"></div></div>
+            <div id="skillEffect" class="skill-effect" hidden><div id="skillSpinePlayer"></div></div>
           </div>
           <div class="scene-hud"><span id="hudMapName">云隐山水</span><b>探索中</b></div>
           <div id="joystick" class="joystick" aria-label="角色移动摇杆"><div class="joystick-ring"></div><div id="knob" class="joystick-knob"></div></div>
@@ -112,6 +113,14 @@
           <button type="button" data-control-mode="click">点击行走</button>
           <button type="button" data-control-mode="joystick" class="active">摇杆行走</button>
         </div>
+        <section class="skill-panel" aria-label="技能释放">
+          <div class="skill-panel-title"><span>技能释放</span><b id="selectedSkillName">飞剑诀</b></div>
+          <div id="skillList" class="skill-list" role="listbox" aria-label="选择技能"></div>
+          <label class="skill-size-row" for="skillSize"><span>效果尺寸</span><b id="skillSizeValue">220px</b></label>
+          <input id="skillSize" type="range" min="80" max="600" step="10" value="220" aria-label="技能效果尺寸">
+          <button id="castSkill" class="cast-skill" type="button">释放当前技能</button>
+          <p id="skillStatus" class="skill-status">选择技能后点击释放，效果会跟随主角显示。</p>
+        </section>
         <div class="tip-card"><b>当前操作</b><p id="controlModeHelp">在地图任意位置按住并拖动摇杆，角色会沿拖动方向持续行走。</p></div>
       </aside>
     </div>
@@ -119,6 +128,6 @@
 </main>
 <div id="dropOverlay" class="drop-overlay" aria-hidden="true"><div><b id="dropTitle">松开上传地图</b><span id="dropDescription">拖到手机地图画布内可添加为建筑</span></div></div>
   <script src="./spine-player.js?v=20260730-3"></script>
-<script src="./app.js?v=20260731-5"></script>
+<script src="./app.js?v=20260813-1"></script>
 </body>
 </html>

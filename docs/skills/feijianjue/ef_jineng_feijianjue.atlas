@@ -1,0 +1,20 @@
+
+ef_jineng_feijianjue.png
+size: 377,105
+format: RGBA8888
+filter: Linear,Linear
+repeat: none
+images/jian_13.1
+  rotate: true
+  xy: 2, 14
+  size: 89, 225
+  orig: 254, 345
+  offset: 83, 65
+  index: -1
+images/jian_13.1add
+  rotate: true
+  xy: 229, 2
+  size: 101, 146
+  orig: 127, 173
+  offset: 13, 15
+  index: -1

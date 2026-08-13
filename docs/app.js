@@ -2,6 +2,16 @@ const $ = (id) => document.getElementById(id);
 const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
 const MAX_UPLOAD_BYTES = 100 * 1024 * 1024;
 const SCENE_SETTINGS_KEY = "fuguang-scene-settings-v2";
+const BUILT_IN_SKILLS = [
+  { id: "feijianjue", name: "飞剑诀", shortName: "飞", directory: "feijianjue", skeleton: "ef_jineng_feijianjue.skel", atlas: "ef_jineng_feijianjue.atlas", color: "#4f8bc2" },
+  { id: "feixingjian", name: "飞星剑", shortName: "星", directory: "feixingjian", skeleton: "ef_jineng_feixingjian.skel", atlas: "ef_jineng_feixingjian.atlas", color: "#5f76bd" },
+  { id: "jianling", name: "剑灵", shortName: "灵", directory: "jianling", skeleton: "jian.skel", atlas: "jian.atlas", color: "#9b69c7" },
+  { id: "jianlunzhen", name: "剑轮阵", shortName: "阵", directory: "jianlunzhen", skeleton: "ef_jineng_jianlunzhen.skel", atlas: "ef_jineng_jianlunzhen.atlas", color: "#d09a4c" },
+  { id: "shandianlian", name: "闪电链", shortName: "电", directory: "shandianlian", skeleton: "ef_jineng_shandianlian.skel", atlas: "ef_jineng_shandianlian.atlas", color: "#55a7d0" },
+  { id: "tiangangjianyu", name: "天罡剑雨", shortName: "雨", directory: "tiangangjianyu", skeleton: "ef_jineng_tiangangjianyu.skel", atlas: "ef_jineng_tiangangjianyu.atlas", color: "#5d9f8e" },
+  { id: "tianjian", name: "天剑", shortName: "天", directory: "tianjian", skeleton: "ef_jineng_yuntianjian.skel", atlas: "ef_jineng_yuntianjian.atlas", color: "#6980bc" },
+  { id: "yueyingzhan", name: "月影斩", shortName: "月", directory: "yueyingzhan", skeleton: "ef_jineng_yueyingzhan.skel", atlas: "ef_jineng_yueyingzhan.atlas", color: "#8b68a9" },
+];
 const state = {
   maps: [{ id: "default", name: "云隐山水", builtIn: true, width: 720, height: 1280, zoom: 140, fit: "cover" }],
   characters: [
@@ -10,6 +20,7 @@ const state = {
   ],
   mapId: "default", characterId: "spine", width: 720, height: 1280,
   zoom: 140, size: 96, sizeWidth: 96, sizeHeight: 96, speed: 100, x: 50, y: 68, controlMode: "joystick",
+  skillId: "feijianjue", skillSize: 220,
 };
 
 let database;
@@ -20,6 +31,14 @@ let spinePlayer = null;
 let spineAnimation = "";
 let loadedSpineCharacterId = "";
 let spineLoadNonce = 0;
+let skillPlayer = null;
+let skillReady = false;
+let loadedSkillId = "";
+let skillLoadNonce = 0;
+let skillLoadPromise = null;
+let skillLoadReject = null;
+let skillEffectActive = false;
+let skillHideTimer = 0;
 let facing = "right";
 let stickOrigin = null;
 let clickTarget = null;
@@ -80,12 +99,20 @@ function assetUrl(item) {
 
 function currentMap() { return state.maps.find((item) => item.id === state.mapId) || state.maps[0]; }
 function currentCharacter() { return state.characters.find((item) => item.id === state.characterId) || state.characters[0] || { id: "", name: "", src: "" }; }
+function currentSkill() { return BUILT_IN_SKILLS.find((item) => item.id === state.skillId) || BUILT_IN_SKILLS[0]; }
+function newestMapsFirst(maps) {
+  return maps
+    .map((map, index) => ({ map, index, createdAt: Number(map.createdAt) || 0 }))
+    .sort((a, b) => b.createdAt - a.createdAt || a.index - b.index)
+    .map(({ map }) => map);
+}
 
 function saveSceneSettings() {
   try {
     localStorage.setItem(SCENE_SETTINGS_KEY, JSON.stringify({
       mapId: state.mapId, characterId: state.characterId, width: state.width, height: state.height,
       size: state.size, sizeWidth: state.sizeWidth, sizeHeight: state.sizeHeight, speed: state.speed, x: state.x, y: state.y, controlMode: state.controlMode,
+      skillId: state.skillId, skillSize: state.skillSize,
     }));
   } catch { /* Storage is unavailable: the current session still works. */ }
 }
@@ -97,6 +124,8 @@ function restoreSceneSettings() {
     ["width", "height", "size", "speed", "x", "y"].forEach((key) => { if (Number.isFinite(saved[key])) state[key] = saved[key]; });
     state.sizeWidth = Number.isFinite(saved.sizeWidth) ? saved.sizeWidth : state.size;
     state.sizeHeight = Number.isFinite(saved.sizeHeight) ? saved.sizeHeight : state.size;
+    state.skillSize = Number.isFinite(saved.skillSize) ? clamp(saved.skillSize, 80, 600) : state.skillSize;
+    if (BUILT_IN_SKILLS.some((skill) => skill.id === saved.skillId)) state.skillId = saved.skillId;
     if (["click", "joystick"].includes(saved.controlMode)) state.controlMode = saved.controlMode;
     state.mapId = state.maps.some((map) => map.id === saved.mapId) ? saved.mapId : state.maps[0]?.id || null;
     state.characterId = state.characters.some((character) => character.id === saved.characterId) ? saved.characterId : state.characters[0]?.id || "";
@@ -165,7 +194,7 @@ function setControlMode(mode) {
 
 function renderGallery() {
   const gallery = $("mapGallery");
-  gallery.innerHTML = state.maps.map((map) => {
+  gallery.innerHTML = newestMapsFirst(state.maps).map((map) => {
     const preview = map.builtIn
       ? '<div class="map-cover built-in-cover"><i></i><i></i><i></i></div>'
       : `<img class="map-cover" src="${assetUrl(map)}" alt="${map.name}">`;
@@ -191,6 +220,28 @@ function renderCharacters() {
     const preview = character.customSpine ? '<span class="spine-preview">SPINE</span>' : `<img src="${assetUrl(character)}" alt="">`;
     return `<div class="character-option ${character.id === state.characterId ? "active" : ""}" data-character-id="${character.id}" role="button" tabindex="0">${preview}<span>${character.name}</span><button class="character-delete" type="button" data-delete-character="${character.id}" aria-label="删除角色 ${character.name}" title="删除角色">×</button></div>`;
   }).join("") : '<p class="character-empty">暂无角色</p>';
+}
+
+function renderSkills() {
+  const skill = currentSkill();
+  const list = $("skillList");
+  if (!list) return;
+  list.innerHTML = BUILT_IN_SKILLS.map((item) => `<button type="button" class="skill-option ${item.id === state.skillId ? "active" : ""}" data-skill-id="${item.id}" aria-pressed="${item.id === state.skillId}" title="选择${item.name}"><i style="--skill-color:${item.color}">${item.shortName}</i><span>${item.name}</span></button>`).join("");
+  $("selectedSkillName").textContent = skill.name;
+  $("skillSize").value = state.skillSize;
+  $("skillSizeValue").textContent = `${state.skillSize}px`;
+  $("castSkill").disabled = !skill;
+}
+
+function selectSkill(id) {
+  if (!BUILT_IN_SKILLS.some((skill) => skill.id === id)) return;
+  state.skillId = id;
+  clearTimeout(skillHideTimer);
+  skillEffectActive = false;
+  $("skillEffect")?.classList.remove("is-active");
+  if ($("skillEffect")) $("skillEffect").hidden = true;
+  saveSceneSettings();
+  renderSkills();
 }
 
 function renderBuildings() {
@@ -243,6 +294,7 @@ function renderCamera() {
     node.style.left = `${characterX}%`;
     node.style.top = `${characterY}%`;
   });
+  renderSkillEffectPosition();
 }
 
 function refreshHighResolutionRendering() {
@@ -299,7 +351,7 @@ function renderExplorer() {
   });
   renderBuildings();
   renderCamera();
-  renderSideMaps(); renderCharacters(); renderControlMode();
+  renderSideMaps(); renderCharacters(); renderSkills(); renderControlMode();
   refreshHighResolutionRendering();
 }
 
@@ -528,6 +580,119 @@ async function ensureSpineCharacter(character = currentCharacter()) {
   } catch { spineReady = false; }
 }
 
+function clearSkillEffectPlayer() {
+  clearTimeout(skillHideTimer);
+  skillEffectActive = false;
+  skillReady = false;
+  if (skillLoadReject) skillLoadReject(new Error("技能切换"));
+  skillLoadReject = null;
+  skillLoadPromise = null;
+  loadedSkillId = "";
+  skillLoadNonce += 1;
+  try { skillPlayer?.stopRendering?.(); skillPlayer?.dom?.remove(); } catch { /* Replace the previous player safely. */ }
+  skillPlayer = null;
+  $("skillSpinePlayer")?.replaceChildren();
+  const effect = $("skillEffect");
+  if (effect) effect.hidden = true;
+}
+
+function renderSkillEffectPosition() {
+  const effect = $("skillEffect");
+  const frame = $("deviceFrame");
+  if (!effect || !frame) return;
+  const scale = frame.clientWidth / state.width || 1;
+  const effectSize = Math.max(60, state.skillSize * scale);
+  effect.style.width = `${effectSize}px`;
+  effect.style.height = `${effectSize}px`;
+  const zoomScale = state.zoom / 100;
+  const worldX = state.x / 100;
+  const worldY = state.y / 100;
+  const cameraMin = zoomScale >= 1 ? .5 / zoomScale : .5;
+  const cameraMax = zoomScale >= 1 ? 1 - cameraMin : .5;
+  const cameraX = zoomScale >= 1 ? clamp(worldX, cameraMin, cameraMax) : .5;
+  const cameraY = zoomScale >= 1 ? clamp(worldY, cameraMin, cameraMax) : .5;
+  const characterX = zoomScale >= 1 ? 50 + (worldX - cameraX) * zoomScale * 100 : state.x;
+  const characterY = zoomScale >= 1 ? 50 + (worldY - cameraY) * zoomScale * 100 : state.y;
+  effect.style.left = `${characterX}%`;
+  effect.style.top = `${characterY}%`;
+}
+
+async function ensureSkillEffect(skill = currentSkill()) {
+  if (!skill || !window.spine?.SpinePlayer) throw new Error("Spine 播放器尚未加载");
+  if (loadedSkillId === skill.id && skillReady && skillPlayer) return skillPlayer;
+  if (skillLoadPromise && loadedSkillId === skill.id) return skillLoadPromise;
+  clearSkillEffectPlayer();
+  const requestId = ++skillLoadNonce;
+  loadedSkillId = skill.id;
+  const basePath = `./skills/${skill.directory}`;
+  skillLoadPromise = new Promise((resolve, reject) => {
+    skillLoadReject = reject;
+    const config = {
+      skelUrl: `${basePath}/${skill.skeleton}`,
+      atlasUrl: `${basePath}/${skill.atlas}`,
+      showControls: false,
+      showLoading: false,
+      alpha: true,
+      backgroundColor: "#00000000",
+      premultipliedAlpha: false,
+      success(player) {
+        if (requestId !== skillLoadNonce) return;
+        skillPlayer = player;
+        skillReady = true;
+        skillLoadReject = null;
+        renderSkillEffectPosition();
+        resolve(player);
+      },
+      error(error) {
+        if (requestId !== skillLoadNonce) return;
+        skillReady = false;
+        skillLoadReject = null;
+        skillLoadPromise = null;
+        reject(error || new Error(`技能“${skill.name}”加载失败`));
+      },
+    };
+    try { skillPlayer = new spine.SpinePlayer("skillSpinePlayer", config); }
+    catch (error) { skillLoadReject = null; skillLoadPromise = null; reject(error); }
+  });
+  return skillLoadPromise;
+}
+
+async function releaseSkill() {
+  if ($("explorerView").hidden) return;
+  const skill = currentSkill();
+  const button = $("castSkill");
+  button.disabled = true;
+  try {
+    const player = await ensureSkillEffect(skill);
+    const animations = player.skeleton?.data?.animations?.map((animation) => animation.name) || [];
+    const animation = skill.animation && animations.includes(skill.animation) ? skill.animation : animations[0];
+    if (!animation) throw new Error("技能没有可播放的动画");
+    skill.animation = animation;
+    player.setAnimation?.(animation);
+    const entry = player.animationState?.setAnimation?.(0, animation, false);
+    if (entry) entry.loop = false;
+    player.play?.();
+    skillEffectActive = true;
+    const effect = $("skillEffect");
+    effect.hidden = false;
+    effect.classList.add("is-active");
+    renderSkillEffectPosition();
+    clearTimeout(skillHideTimer);
+    const duration = player.skeleton?.data?.findAnimation?.(animation)?.duration || 1.2;
+    skillHideTimer = window.setTimeout(() => {
+      skillEffectActive = false;
+      effect.hidden = true;
+      effect.classList.remove("is-active");
+    }, Math.max(350, duration * 1000 + 100));
+    $("skillStatus").textContent = `${skill.name} · ${animation}`;
+    saveSceneSettings();
+  } catch (error) {
+    $("skillStatus").textContent = error?.message || "技能加载失败";
+  } finally {
+    button.disabled = false;
+  }
+}
+
 function initSpine() { /* Spine is loaded only after the user opens a scene. */ }
 
 function updateStick(event) {
@@ -554,6 +719,17 @@ function bindEvents() {
     if (remove) { event.stopPropagation(); deleteCharacter(remove.dataset.deleteCharacter); return; }
     const card = event.target.closest("[data-character-id]");
     if (card) { state.characterId = card.dataset.characterId; saveSceneSettings(); renderExplorer(); }
+  };
+  $("skillList").onclick = (event) => {
+    const button = event.target.closest("[data-skill-id]");
+    if (button) selectSkill(button.dataset.skillId);
+  };
+  $("castSkill").onclick = releaseSkill;
+  $("skillSize").oninput = (event) => {
+    state.skillSize = clamp(+event.target.value || 220, 80, 600);
+    $("skillSizeValue").textContent = `${state.skillSize}px`;
+    renderSkillEffectPosition();
+    saveSceneSettings();
   };
   $("sideMapUpload").onchange = async (event) => { await importMaps(event.target.files); state.mapId = state.maps.at(-1).id; saveSceneSettings(); renderExplorer(); };
   $("buildingUpload").onchange = async (event) => {

@@ -1,0 +1,174 @@
+
+ef_jineng_yueyingzhan.png
+size: 1312,1012
+format: RGBA8888
+filter: Linear,Linear
+repeat: none
+images/add_04
+  rotate: true
+  xy: 617, 422
+  size: 150, 327
+  orig: 360, 360
+  offset: 105, 33
+  index: -1
+images/add_05
+  rotate: true
+  xy: 2, 3
+  size: 222, 325
+  orig: 360, 360
+  offset: 69, 35
+  index: -1
+images/add_06
+  rotate: true
+  xy: 2, 228
+  size: 194, 285
+  orig: 360, 360
+  offset: 83, 60
+  index: -1
+images/add_07
+  rotate: true
+  xy: 2, 424
+  size: 148, 311
+  orig: 360, 360
+  offset: 106, 49
+  index: -1
+images/add_08
+  rotate: true
+  xy: 329, 2
+  size: 222, 299
+  orig: 360, 360
+  offset: 69, 61
+  index: -1
+images/add_09
+  rotate: true
+  xy: 289, 227
+  size: 194, 314
+  orig: 360, 360
+  offset: 83, 31
+  index: -1
+images/add_10
+  rotate: true
+  xy: 315, 423
+  size: 149, 300
+  orig: 360, 360
+  offset: 106, 60
+  index: -1
+images/add_11
+  rotate: true
+  xy: 630, 2
+  size: 222, 328
+  orig: 360, 360
+  offset: 69, 32
+  index: -1
+images/add_12
+  rotate: true
+  xy: 605, 226
+  size: 194, 307
+  orig: 360, 360
+  offset: 83, 38
+  index: -1
+images/add_13
+  rotate: true
+  xy: 946, 422
+  size: 150, 341
+  orig: 360, 360
+  offset: 105, 19
+  index: -1
+images/add_14
+  rotate: true
+  xy: 960, 2
+  size: 222, 344
+  orig: 360, 360
+  offset: 69, 16
+  index: -1
+images/add_15
+  rotate: true
+  xy: 914, 226
+  size: 194, 316
+  orig: 360, 360
+  offset: 83, 29
+  index: -1
+images/alpha_04
+  rotate: true
+  xy: 333, 866
+  size: 144, 329
+  orig: 360, 360
+  offset: 110, 18
+  index: -1
+images/alpha_05
+  rotate: true
+  xy: 664, 866
+  size: 144, 327
+  orig: 360, 360
+  offset: 110, 20
+  index: -1
+images/alpha_06
+  rotate: true
+  xy: 993, 866
+  size: 144, 317
+  orig: 360, 360
+  offset: 110, 30
+  index: -1
+images/alpha_07
+  rotate: true
+  xy: 2, 720
+  size: 144, 319
+  orig: 360, 360
+  offset: 110, 28
+  index: -1
+images/alpha_08
+  rotate: true
+  xy: 323, 720
+  size: 144, 308
+  orig: 360, 360
+  offset: 110, 39
+  index: -1
+images/alpha_09
+  rotate: true
+  xy: 633, 720
+  size: 144, 316
+  orig: 360, 360
+  offset: 110, 31
+  index: -1
+images/alpha_10
+  rotate: true
+  xy: 951, 720
+  size: 144, 316
+  orig: 360, 360
+  offset: 110, 31
+  index: -1
+images/alpha_11
+  rotate: true
+  xy: 2, 574
+  size: 144, 317
+  orig: 360, 360
+  offset: 110, 30
+  index: -1
+images/alpha_12
+  rotate: true
+  xy: 321, 574
+  size: 144, 319
+  orig: 360, 360
+  offset: 110, 28
+  index: -1
+images/alpha_13
+  rotate: true
+  xy: 642, 574
+  size: 144, 326
+  orig: 360, 360
+  offset: 110, 21
+  index: -1
+images/alpha_14
+  rotate: true
+  xy: 970, 574
+  size: 144, 329
+  orig: 360, 360
+  offset: 110, 18
+  index: -1
+images/alpha_15
+  rotate: true
+  xy: 2, 866
+  size: 144, 329
+  orig: 360, 360
+  offset: 110, 18
+  index: -1

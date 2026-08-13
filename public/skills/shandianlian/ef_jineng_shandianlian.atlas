@@ -1,0 +1,97 @@
+
+ef_jineng_shandianlian.png
+size: 2048,2048
+format: RGBA8888
+filter: Linear,Linear
+repeat: none
+images/add
+  rotate: false
+  xy: 1236, 1396
+  size: 234, 233
+  orig: 256, 253
+  offset: 11, 10
+  index: -1
+images/shandian_00
+  rotate: false
+  xy: 955, 1446
+  size: 279, 183
+  orig: 500, 250
+  offset: 0, 33
+  index: -1
+images/shandian_01
+  rotate: false
+  xy: 2, 1445
+  size: 378, 182
+  orig: 500, 250
+  offset: 0, 33
+  index: -1
+images/shandian_02
+  rotate: false
+  xy: 2, 1797
+  size: 500, 211
+  orig: 500, 250
+  offset: 0, 0
+  index: -1
+images/shandian_03
+  rotate: false
+  xy: 504, 1797
+  size: 500, 211
+  orig: 500, 250
+  offset: 0, 0
+  index: -1
+images/shandian_04
+  rotate: false
+  xy: 1006, 1800
+  size: 500, 208
+  orig: 500, 250
+  offset: 0, 42
+  index: -1
+images/shandian_05
+  rotate: false
+  xy: 1508, 1800
+  size: 500, 208
+  orig: 500, 250
+  offset: 0, 42
+  index: -1
+images/shandian_06
+  rotate: false
+  xy: 1006, 1631
+  size: 500, 167
+  orig: 500, 250
+  offset: 0, 41
+  index: -1
+images/shandian_07
+  rotate: false
+  xy: 1508, 1634
+  size: 500, 164
+  orig: 500, 250
+  offset: 0, 39
+  index: -1
+images/shandian_08
+  rotate: false
+  xy: 1508, 1461
+  size: 493, 171
+  orig: 500, 250
+  offset: 6, 40
+  index: -1
+images/shandian_09
+  rotate: false
+  xy: 488, 1660
+  size: 473, 135
+  orig: 500, 250
+  offset: 22, 59
+  index: -1
+images/shandian_10
+  rotate: false
+  xy: 488, 1527
+  size: 465, 131
+  orig: 500, 250
+  offset: 30, 61
+  index: -1
+images/shandian_14
+  rotate: false
+  xy: 2, 1629
+  size: 484, 166
+  orig: 500, 250
+  offset: 11, 42
+  index: -1
