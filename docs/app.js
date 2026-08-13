@@ -276,8 +276,64 @@ function selectBuilding(id) {
   }
 }
 
+function mapViewMetrics() {
+  const map = currentMap();
+  const frame = $("deviceFrame");
+  const frameWidth = frame.clientWidth || 1;
+  const frameHeight = frame.clientHeight || 1;
+  const mapWidth = Number(map.width) || state.width;
+  const mapHeight = Number(map.height) || state.height;
+  const baseScale = map.fit === "contain"
+    ? Math.min(frameWidth / mapWidth, frameHeight / mapHeight)
+    : frameWidth / state.width;
+  const scale = baseScale * (state.zoom / 100);
+  const worldWidth = mapWidth * scale;
+  const worldHeight = mapHeight * scale;
+  const cameraLeft = worldWidth <= frameWidth
+    ? (worldWidth - frameWidth) / 2
+    : clamp(state.x / 100 * worldWidth - frameWidth / 2, 0, worldWidth - frameWidth);
+  const cameraTop = worldHeight <= frameHeight
+    ? (worldHeight - frameHeight) / 2
+    : clamp(state.y / 100 * worldHeight - frameHeight / 2, 0, worldHeight - frameHeight);
+  return { frameWidth, frameHeight, worldWidth, worldHeight, cameraLeft, cameraTop, scale };
+}
+
+function mapPositionFromPointer(clientX, clientY) {
+  const rect = $("sceneBackground").getBoundingClientRect();
+  if (currentMap().builtIn) return {
+    x: clamp((clientX - rect.left) / rect.width * 100, 0, 100),
+    y: clamp((clientY - rect.top) / rect.height * 100, 0, 100),
+  };
+  const view = mapViewMetrics();
+  return {
+    x: clamp((clientX - rect.left + view.cameraLeft) / view.worldWidth * 100, 0, 100),
+    y: clamp((clientY - rect.top + view.cameraTop) / view.worldHeight * 100, 0, 100),
+  };
+}
+
 function renderCamera() {
   const frame = $("deviceFrame");
+  if (!currentMap().builtIn) {
+    const view = mapViewMetrics();
+    $("sceneBackground").style.transform = "none";
+    $("sceneBackground").style.backgroundSize = `${view.worldWidth}px ${view.worldHeight}px`;
+    $("sceneBackground").style.backgroundPosition = `${-view.cameraLeft}px ${-view.cameraTop}px`;
+    const characterX = (state.x / 100 * view.worldWidth - view.cameraLeft) / view.frameWidth * 100;
+    const characterY = (state.y / 100 * view.worldHeight - view.cameraTop) / view.frameHeight * 100;
+    [$("stageCharacter"), $("spineCharacter")].forEach((node) => {
+      node.style.left = `${characterX}%`;
+      node.style.top = `${characterY}%`;
+    });
+    document.querySelectorAll("[data-building-id]").forEach((node) => {
+      const building = currentMap().buildings?.find((item) => item.id === node.dataset.buildingId);
+      if (!building) return;
+      node.style.left = `${(building.x / 100 * view.worldWidth - view.cameraLeft) / view.frameWidth * 100}%`;
+      node.style.top = `${(building.y / 100 * view.worldHeight - view.cameraTop) / view.frameHeight * 100}%`;
+      node.style.width = `${building.size * view.scale}px`;
+    });
+    renderSkillEffectPosition();
+    return;
+  }
   const scale = state.zoom / 100;
   const worldX = state.x / 100;
   const worldY = state.y / 100;
@@ -449,10 +505,8 @@ async function addBuildingsAt(fileList, baseX, baseY) {
 }
 
 async function importBuildings(fileList, clientX, clientY) {
-  const rect = $("sceneBackground").getBoundingClientRect();
-  const x = clamp((clientX - rect.left) / rect.width * 100, 0, 100);
-  const y = clamp((clientY - rect.top) / rect.height * 100, 0, 100);
-  await addBuildingsAt(fileList, x, y);
+  const position = mapPositionFromPointer(clientX, clientY);
+  await addBuildingsAt(fileList, position.x, position.y);
 }
 
 function deleteBuildingFromLibrary(id) {
@@ -482,11 +536,11 @@ function toggleBuildingInScene(id) {
 function moveBuildingFromPointer(id, event) {
   const building = currentMap().buildings?.find((item) => item.id === id);
   if (!building) return;
-  const rect = $("sceneBackground").getBoundingClientRect();
-  building.x = clamp((event.clientX - buildingDragOffset.x - rect.left) / rect.width * 100, 0, 100);
-  building.y = clamp((event.clientY - buildingDragOffset.y - rect.top) / rect.height * 100, 0, 100);
+  const position = mapPositionFromPointer(event.clientX - buildingDragOffset.x, event.clientY - buildingDragOffset.y);
+  building.x = position.x;
+  building.y = position.y;
   const node = document.querySelector(`[data-building-id="${id}"]`);
-  if (node) { node.style.left = `${building.x}%`; node.style.top = `${building.y}%`; }
+  if (node) renderCamera();
 }
 
 async function importCharacters(fileList) {
@@ -791,11 +845,20 @@ function bindEvents() {
     draggingBuildingId = building.dataset.buildingId;
     selectBuilding(draggingBuildingId);
     const item = currentMap().buildings?.find((entry) => entry.id === draggingBuildingId);
-    const rect = $("sceneBackground").getBoundingClientRect();
-    buildingDragOffset = item ? {
-      x: event.clientX - (rect.left + item.x / 100 * rect.width),
-      y: event.clientY - (rect.top + item.y / 100 * rect.height),
-    } : { x: 0, y: 0 };
+    if (item && !currentMap().builtIn) {
+      const rect = $("sceneBackground").getBoundingClientRect();
+      const view = mapViewMetrics();
+      buildingDragOffset = {
+        x: event.clientX - (rect.left + item.x / 100 * view.worldWidth - view.cameraLeft),
+        y: event.clientY - (rect.top + item.y / 100 * view.worldHeight - view.cameraTop),
+      };
+    } else {
+      const rect = $("sceneBackground").getBoundingClientRect();
+      buildingDragOffset = item ? {
+        x: event.clientX - (rect.left + item.x / 100 * rect.width),
+        y: event.clientY - (rect.top + item.y / 100 * rect.height),
+      } : { x: 0, y: 0 };
+    }
     building.setPointerCapture(event.pointerId);
   };
   buildingLayer.onpointermove = (event) => {
@@ -819,11 +882,7 @@ function bindEvents() {
     if (event.button !== undefined && event.button !== 0) return;
     event.preventDefault();
     if (state.controlMode === "click") {
-      const rect = $("sceneBackground").getBoundingClientRect();
-      clickTarget = {
-        x: clamp((event.clientX - rect.left) / rect.width * 100, 0, 100),
-        y: clamp((event.clientY - rect.top) / rect.height * 100, 0, 100),
-      };
+      clickTarget = mapPositionFromPointer(event.clientX, event.clientY);
       const dx = clickTarget.x - state.x;
       const dy = clickTarget.y - state.y;
       if (Math.hypot(dx, dy) < .2) return;
