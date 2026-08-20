@@ -25,7 +25,7 @@
     <header class="explorer-topbar">
       <button id="backHome" class="back-button">返回地图库</button>
       <div><span class="eyebrow">当前场景</span><h2 id="currentMapName">云隐山水</h2></div>
-      <button id="resetScene" class="secondary-action">重置位置和缩放</button>
+      <div class="explorer-actions"><button id="resetScene" class="secondary-action">重置位置和缩放</button><button id="enterExploration" class="primary-action">进入探索</button></div>
     </header>
 
     <div class="explorer-layout">
@@ -125,6 +125,7 @@
       </aside>
     </div>
   </section>
+  <button id="exitExploration" class="exploration-exit" type="button" aria-label="退出探索">退出探索</button>
 </main>
 <div id="dropOverlay" class="drop-overlay" aria-hidden="true"><div><b id="dropTitle">松开上传地图</b><span id="dropDescription">拖到手机地图画布内可添加为建筑</span></div></div>
   <script src="./spine-player.js?v=20260730-3"></script>

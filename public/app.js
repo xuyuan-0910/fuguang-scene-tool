@@ -46,6 +46,7 @@ let lastFrameTime = 0;
 let selectedBuildingId = null;
 let draggingBuildingId = null;
 let buildingDragOffset = { x: 0, y: 0 };
+let explorationMode = false;
 
 function openDatabase() {
   return new Promise((resolve, reject) => {
@@ -369,6 +370,24 @@ function refreshHighResolutionRendering() {
   });
 }
 
+function renderExplorationMode() {
+  const view = $("explorerView");
+  view.classList.toggle("exploration-mode", explorationMode);
+  document.body.classList.toggle("exploration-active", explorationMode);
+  const enterButton = $("enterExploration");
+  if (enterButton) {
+    enterButton.textContent = explorationMode ? "退出探索" : "进入探索";
+    enterButton.setAttribute("aria-pressed", String(explorationMode));
+  }
+}
+
+function setExplorationMode(enabled) {
+  explorationMode = Boolean(enabled);
+  stopCharacterMovement();
+  renderExplorationMode();
+  renderExplorer();
+}
+
 function renderExplorer() {
   const map = currentMap();
   const character = currentCharacter();
@@ -397,6 +416,7 @@ function renderExplorer() {
   $("stageCharacter").hidden = !character.id || (character.spine && spineReady);
   $("spineCharacter").hidden = !character.id || !character.spine || !spineReady;
   const aspect = state.width / state.height;
+  $("explorerView").style.setProperty("--scene-aspect", aspect);
   $("deviceFrame").style.aspectRatio = `${state.width} / ${state.height}`;
   $("deviceFrame").style.width = aspect > .8 ? "min(62vh, 520px)" : "min(48vh, 390px)";
   const displayScale = $("deviceFrame").clientWidth / state.width || 1;
@@ -409,10 +429,12 @@ function renderExplorer() {
   renderBuildings();
   renderCamera();
   renderSideMaps(); renderCharacters(); renderSkills(); renderControlMode();
+  renderExplorationMode();
   refreshHighResolutionRendering();
 }
 
 function enterMap(id) {
+  explorationMode = false;
   state.mapId = id;
   $("homeView").hidden = true;
   $("explorerView").hidden = false;
@@ -422,6 +444,8 @@ function enterMap(id) {
 }
 
 function goHome() {
+  explorationMode = false;
+  renderExplorationMode();
   $("explorerView").hidden = true;
   $("homeView").hidden = false;
   renderGallery();
@@ -813,6 +837,14 @@ function bindEvents() {
   $("characterUpload").onchange = async (event) => { await importCharacters(event.target.files); event.target.value = ""; };
   $("spineUpload").onchange = async (event) => { await importSpineCharacter(event.target.files); event.target.value = ""; };
   $("backHome").onclick = goHome;
+  $("enterExploration").onclick = () => setExplorationMode(!explorationMode);
+  $("exitExploration").onclick = () => setExplorationMode(false);
+  window.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && explorationMode) {
+      event.preventDefault();
+      setExplorationMode(false);
+    }
+  });
   $("resetScene").onclick = () => { state.x = 50; state.y = 68; setSceneZoom(currentMap().fit === "contain" ? 100 : 140); saveSceneSettings(); };
   $("zoomRange").oninput = (event) => setSceneZoom(+event.target.value);
   $("zoomOut").onclick = () => setSceneZoom(state.zoom - 10);
