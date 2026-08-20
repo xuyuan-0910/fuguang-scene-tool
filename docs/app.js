@@ -434,7 +434,7 @@ function renderExplorer() {
 }
 
 function enterMap(id) {
-  explorationMode = false;
+  explorationMode = true;
   state.mapId = id;
   $("homeView").hidden = true;
   $("explorerView").hidden = false;
