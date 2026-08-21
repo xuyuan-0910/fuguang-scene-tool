@@ -46,6 +46,7 @@ let lastFrameTime = 0;
 let selectedBuildingId = null;
 let draggingBuildingId = null;
 let buildingDragOffset = { x: 0, y: 0 };
+let sceneDrag = null;
 let explorationMode = false;
 
 function openDatabase() {
@@ -127,7 +128,7 @@ function restoreSceneSettings() {
     state.sizeHeight = Number.isFinite(saved.sizeHeight) ? saved.sizeHeight : state.size;
     state.skillSize = Number.isFinite(saved.skillSize) ? clamp(saved.skillSize, 80, 600) : state.skillSize;
     if (BUILT_IN_SKILLS.some((skill) => skill.id === saved.skillId)) state.skillId = saved.skillId;
-    if (["click", "joystick"].includes(saved.controlMode)) state.controlMode = saved.controlMode;
+    if (["click", "joystick", "pan"].includes(saved.controlMode)) state.controlMode = saved.controlMode;
     state.mapId = state.maps.some((map) => map.id === saved.mapId) ? saved.mapId : state.maps[0]?.id || null;
     state.characterId = state.characters.some((character) => character.id === saved.characterId) ? saved.characterId : state.characters[0]?.id || "";
   } catch { /* Ignore malformed old settings. */ }
@@ -176,21 +177,33 @@ function renderControlMode() {
     button.setAttribute("aria-pressed", String(active));
   });
   const clickMode = state.controlMode === "click";
-  $("joystick").hidden = clickMode;
-  $("movementHelp").textContent = clickMode
-    ? "点击地图上的目标位置，角色会自动行走过去"
-    : "在地图任意位置按住并拖动即可移动角色，松手停止";
-  $("controlModeHelp").textContent = clickMode
-    ? "点击地图上的任意位置，角色会自动走向目标；再次点击可立即更换目标。"
-    : "在地图任意位置按住并拖动摇杆，角色会沿拖动方向持续行走。";
+  const panMode = state.controlMode === "pan";
+  $("joystick").hidden = clickMode || panMode;
+  $("deviceFrame").classList.toggle("pan-mode", panMode);
+  $("movementHelp").textContent = panMode
+    ? "按住地图并拖动可单独移动场景，角色位置保持不变"
+    : clickMode
+      ? "点击地图上的目标位置，角色会自动行走过去"
+      : "在地图任意位置按住并拖动即可移动角色，松手停止";
+  $("controlModeHelp").textContent = panMode
+    ? "按住地图空白处拖动场景；角色坐标不会改变，切回行走模式后镜头继续跟随角色。"
+    : clickMode
+      ? "点击地图上的任意位置，角色会自动走向目标；再次点击可立即更换目标。"
+      : "在地图任意位置按住并拖动摇杆，角色会沿拖动方向持续行走。";
 }
 
 function setControlMode(mode) {
-  if (mode !== "click" && mode !== "joystick") return;
+  if (!["click", "joystick", "pan"].includes(mode)) return;
   stopCharacterMovement();
   state.controlMode = mode;
+  if (mode === "pan") {
+    const map = currentMap();
+    if (!Number.isFinite(map.cameraX)) map.cameraX = state.x / 100;
+    if (!Number.isFinite(map.cameraY)) map.cameraY = state.y / 100;
+  }
   saveSceneSettings();
   renderControlMode();
+  renderCamera();
 }
 
 function renderGallery() {
@@ -290,12 +303,14 @@ function mapViewMetrics() {
   const scale = baseScale * (state.zoom / 100);
   const worldWidth = mapWidth * scale;
   const worldHeight = mapHeight * scale;
+  const cameraX = state.controlMode === "pan" && Number.isFinite(map.cameraX) ? map.cameraX : state.x / 100;
+  const cameraY = state.controlMode === "pan" && Number.isFinite(map.cameraY) ? map.cameraY : state.y / 100;
   const cameraLeft = worldWidth <= frameWidth
     ? (worldWidth - frameWidth) / 2
-    : clamp(state.x / 100 * worldWidth - frameWidth / 2, 0, worldWidth - frameWidth);
+    : clamp(cameraX * worldWidth - frameWidth / 2, 0, worldWidth - frameWidth);
   const cameraTop = worldHeight <= frameHeight
     ? (worldHeight - frameHeight) / 2
-    : clamp(state.y / 100 * worldHeight - frameHeight / 2, 0, worldHeight - frameHeight);
+    : clamp(cameraY * worldHeight - frameHeight / 2, 0, worldHeight - frameHeight);
   return { frameWidth, frameHeight, worldWidth, worldHeight, cameraLeft, cameraTop, scale };
 }
 
@@ -340,8 +355,10 @@ function renderCamera() {
   const worldY = state.y / 100;
   const cameraMin = scale >= 1 ? .5 / scale : .5;
   const cameraMax = scale >= 1 ? 1 - cameraMin : .5;
-  const cameraX = scale >= 1 ? clamp(worldX, cameraMin, cameraMax) : .5;
-  const cameraY = scale >= 1 ? clamp(worldY, cameraMin, cameraMax) : .5;
+  const requestedCameraX = state.controlMode === "pan" && Number.isFinite(currentMap().cameraX) ? currentMap().cameraX : worldX;
+  const requestedCameraY = state.controlMode === "pan" && Number.isFinite(currentMap().cameraY) ? currentMap().cameraY : worldY;
+  const cameraX = scale >= 1 ? clamp(requestedCameraX, cameraMin, cameraMax) : .5;
+  const cameraY = scale >= 1 ? clamp(requestedCameraY, cameraMin, cameraMax) : .5;
   const panX = -(cameraX - .5) * scale * frame.clientWidth;
   const panY = -(cameraY - .5) * scale * frame.clientHeight;
   $("sceneBackground").style.transform = `translate3d(${panX}px, ${panY}px, 0) scale(${scale})`;
@@ -885,6 +902,7 @@ function bindEvents() {
   $("posY").onchange = (event) => { state.y = clamp(+event.target.value, 0, 100); saveSceneSettings(); renderExplorer(); };
   const buildingLayer = $("buildingLayer");
   buildingLayer.onpointerdown = (event) => {
+    if (state.controlMode === "pan") return;
     const building = event.target.closest("[data-building-id]");
     if (!building || (event.button !== undefined && event.button !== 0)) return;
     event.preventDefault();
@@ -928,6 +946,19 @@ function bindEvents() {
   frame.onpointerdown = (event) => {
     if (event.button !== undefined && event.button !== 0) return;
     event.preventDefault();
+    if (state.controlMode === "pan") {
+      const map = currentMap();
+      sceneDrag = {
+        pointerId: event.pointerId,
+        startX: event.clientX,
+        startY: event.clientY,
+        cameraX: Number.isFinite(map.cameraX) ? map.cameraX : state.x / 100,
+        cameraY: Number.isFinite(map.cameraY) ? map.cameraY : state.y / 100,
+      };
+      frame.classList.add("is-panning");
+      frame.setPointerCapture(event.pointerId);
+      return;
+    }
     if (state.controlMode === "click") {
       clickTarget = mapPositionFromPointer(event.clientX, event.clientY);
       const dx = clickTarget.x - state.x;
@@ -957,10 +988,41 @@ function bindEvents() {
     frame.setPointerCapture(event.pointerId);
     updateStick(event);
   };
-  frame.onpointermove = (event) => { if (state.controlMode === "joystick" && moving) updateStick(event); };
-  frame.onpointerup = () => { if (state.controlMode === "joystick") stopCharacterMovement(); };
-  frame.onpointercancel = () => { if (state.controlMode === "joystick") stopCharacterMovement(); };
-  frame.onlostpointercapture = () => { if (state.controlMode === "joystick" && moving) stopCharacterMovement(); };
+  frame.onpointermove = (event) => {
+    if (state.controlMode === "joystick" && moving) updateStick(event);
+    if (state.controlMode !== "pan" || !sceneDrag || sceneDrag.pointerId !== event.pointerId) return;
+    const map = currentMap();
+    const dx = event.clientX - sceneDrag.startX;
+    const dy = event.clientY - sceneDrag.startY;
+    if (map.builtIn) {
+      const scale = state.zoom / 100;
+      map.cameraX = clamp(sceneDrag.cameraX - dx / (Math.max(frame.clientWidth, 1) * scale), 0, 1);
+      map.cameraY = clamp(sceneDrag.cameraY - dy / (Math.max(frame.clientHeight, 1) * scale), 0, 1);
+    } else {
+      const view = mapViewMetrics();
+      map.cameraX = clamp(sceneDrag.cameraX - dx / Math.max(view.worldWidth, 1), 0, 1);
+      map.cameraY = clamp(sceneDrag.cameraY - dy / Math.max(view.worldHeight, 1), 0, 1);
+    }
+    renderCamera();
+  };
+  const stopSceneDrag = () => {
+    if (!sceneDrag) return;
+    dbWrite("maps", currentMap());
+    sceneDrag = null;
+    frame.classList.remove("is-panning");
+  };
+  frame.onpointerup = () => {
+    if (state.controlMode === "joystick") stopCharacterMovement();
+    stopSceneDrag();
+  };
+  frame.onpointercancel = () => {
+    if (state.controlMode === "joystick") stopCharacterMovement();
+    stopSceneDrag();
+  };
+  frame.onlostpointercapture = () => {
+    if (state.controlMode === "joystick" && moving) stopCharacterMovement();
+    stopSceneDrag();
+  };
   document.addEventListener("pointerdown", (event) => {
     if (!event.target.closest("[data-building-id], [data-building-select], #buildingConfig")) selectBuilding(null);
   });
