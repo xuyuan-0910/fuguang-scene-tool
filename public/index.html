@@ -93,10 +93,10 @@
         <div class="character-upload-actions"><label>＋ 添加图片<input id="characterUpload" type="file" accept="image/*" multiple></label><label>＋ 添加 Spine<input id="spineUpload" type="file" accept=".skel,.json,.atlas,image/png,image/webp" multiple></label></div>
         <div id="characterList" class="character-list"></div>
           <div class="control-group">
-            <div class="control-title"><span>角色尺寸（场景像素）</span></div>
+            <div class="control-title"><span>角色尺寸（实际显示像素）</span></div>
             <div class="size-input-group"><label>宽<input id="characterSizeInput" type="number" min="20" max="600" step="1" value="96" aria-label="输入角色宽度"></label><i>×</i><label>高<input id="characterHeightInput" type="number" min="20" max="600" step="1" value="96" aria-label="输入角色高度"></label></div>
             <input id="characterSize" type="range" min="48" max="260" value="96">
-            <small class="size-note">输入 135 表示 135 个场景像素，不受地图缩放影响</small>
+            <small class="size-note">输入 135，实际显示宽度或高度就是 135px</small>
           </div>
           <div class="control-group">
             <div class="control-title"><span>移动速度</span><b id="speedValue">100%</b></div>
@@ -131,6 +131,6 @@
 </main>
 <div id="dropOverlay" class="drop-overlay" aria-hidden="true"><div><b id="dropTitle">松开上传地图</b><span id="dropDescription">拖到手机地图画布内可添加为建筑</span></div></div>
   <script src="./spine-player.js?v=20260730-3"></script>
-<script src="./app.js?v=20260821-3"></script>
+<script src="./app.js?v=20260821-4"></script>
 </body>
 </html>

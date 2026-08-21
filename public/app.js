@@ -419,10 +419,8 @@ function renderExplorer() {
   $("explorerView").style.setProperty("--scene-aspect", aspect);
   $("deviceFrame").style.aspectRatio = `${state.width} / ${state.height}`;
   $("deviceFrame").style.width = aspect > .8 ? "min(62vh, 520px)" : "min(48vh, 390px)";
-  const displayScale = $("deviceFrame").clientWidth / state.width || 1;
-  const characterScale = displayScale;
-  const renderedWidth = state.sizeWidth * characterScale;
-  const renderedHeight = state.sizeHeight * characterScale;
+  const renderedWidth = state.sizeWidth;
+  const renderedHeight = state.sizeHeight;
   [$("stageCharacter"), $("spineCharacter")].forEach((node) => {
     node.style.width = `${renderedWidth}px`; node.style.height = `${renderedHeight}px`;
   });
