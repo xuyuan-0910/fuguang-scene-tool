@@ -857,8 +857,24 @@ function bindEvents() {
     renderExplorer();
   };
   $("characterSize").oninput = (event) => { state.size = +event.target.value; state.sizeWidth = state.size; state.sizeHeight = state.size; saveSceneSettings(); renderExplorer(); };
-  $("characterSizeInput").onchange = (event) => { state.sizeWidth = clamp(+event.target.value || 96, 20, 600); state.size = clamp(state.sizeWidth, 48, 260); saveSceneSettings(); renderExplorer(); };
-  $("characterHeightInput").onchange = (event) => { state.sizeHeight = clamp(+event.target.value || 96, 20, 600); state.size = clamp(Math.round((state.sizeWidth + state.sizeHeight) / 2), 48, 260); saveSceneSettings(); renderExplorer(); };
+  const updateCharacterWidth = (rawValue, finalize = false) => {
+    const value = Number(rawValue);
+    if (!Number.isFinite(value) || (!finalize && (value < 20 || value > 600))) return;
+    state.sizeWidth = clamp(value || 96, 20, 600);
+    state.size = clamp(state.sizeWidth, 48, 260);
+    saveSceneSettings(); renderExplorer();
+  };
+  const updateCharacterHeight = (rawValue, finalize = false) => {
+    const value = Number(rawValue);
+    if (!Number.isFinite(value) || (!finalize && (value < 20 || value > 600))) return;
+    state.sizeHeight = clamp(value || 96, 20, 600);
+    state.size = clamp(Math.round((state.sizeWidth + state.sizeHeight) / 2), 48, 260);
+    saveSceneSettings(); renderExplorer();
+  };
+  $("characterSizeInput").oninput = (event) => updateCharacterWidth(event.target.value);
+  $("characterSizeInput").onchange = (event) => updateCharacterWidth(event.target.value, true);
+  $("characterHeightInput").oninput = (event) => updateCharacterHeight(event.target.value);
+  $("characterHeightInput").onchange = (event) => updateCharacterHeight(event.target.value, true);
   $("characterSizeInput").onkeydown = (event) => { if (event.key === "Enter") event.target.blur(); };
   $("characterHeightInput").onkeydown = (event) => { if (event.key === "Enter") event.target.blur(); };
   $("movementSpeed").oninput = (event) => { state.speed = +event.target.value; $("speedValue").textContent = `${state.speed}%`; saveSceneSettings(); };
