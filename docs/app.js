@@ -420,7 +420,7 @@ function renderExplorer() {
   $("deviceFrame").style.aspectRatio = `${state.width} / ${state.height}`;
   $("deviceFrame").style.width = aspect > .8 ? "min(62vh, 520px)" : "min(48vh, 390px)";
   const displayScale = $("deviceFrame").clientWidth / state.width || 1;
-  const characterScale = map.builtIn ? displayScale : mapViewMetrics().scale;
+  const characterScale = displayScale;
   const renderedWidth = state.sizeWidth * characterScale;
   const renderedHeight = state.sizeHeight * characterScale;
   [$("stageCharacter"), $("spineCharacter")].forEach((node) => {
@@ -467,7 +467,7 @@ function deleteMap(id) {
 
 function setSceneZoom(value) {
   const map = currentMap();
-  map.zoom = clamp(value, 60, 1000);
+  map.zoom = clamp(value, 10, 1000);
   state.zoom = map.zoom;
   dbWrite("maps", map); saveSceneSettings();
   renderExplorer();
