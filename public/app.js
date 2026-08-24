@@ -221,8 +221,9 @@ function renderGallery() {
 }
 
 function renderSideMaps() {
-  $("sideMapList").classList.toggle("scrollable", state.maps.length > 4);
-  $("sideMapList").innerHTML = state.maps.map((map) => {
+  const orderedMaps = newestMapsFirst(state.maps);
+  $("sideMapList").classList.toggle("scrollable", orderedMaps.length > 6);
+  $("sideMapList").innerHTML = orderedMaps.map((map) => {
     const image = map.builtIn ? '<span class="mini-built-in"></span>' : `<img src="${assetUrl(map)}" alt="">`;
     const remove = `<button class="side-map-delete" type="button" data-delete-map="${map.id}" aria-label="删除场景 ${map.name}" title="删除场景">×</button>`;
     return `<div data-map-id="${map.id}" class="side-map ${map.id === state.mapId ? "active" : ""}" role="button" tabindex="0">${image}<span>${map.name}</span>${remove}</div>`;
