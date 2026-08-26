@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
   <title>浮光造境 · 地图角色模拟器</title>
   <meta name="description" content="管理地图，并在手机画布中模拟角色移动">
-  <link rel="stylesheet" href="./styles.css?v=20260824-1">
+  <link rel="stylesheet" href="./styles.css?v=20260826-1">
   <link rel="stylesheet" href="./spine-player.css">
 </head>
 <body>
@@ -57,6 +57,8 @@
       </aside>
 
       <section class="stage-column">
+        <div class="scene-switcher">
+          <button id="previousScene" class="scene-switch-button previous" type="button" aria-label="切换到上一张场景" title="上一张场景">‹</button>
         <div id="deviceFrame" class="device-frame">
           <div id="scene" class="scene">
             <div id="sceneBackground" class="scene-background">
@@ -69,6 +71,8 @@
           </div>
           <div class="scene-hud"><span id="hudMapName">云隐山水</span><b>探索中</b></div>
           <div id="joystick" class="joystick" aria-label="角色移动摇杆"><div class="joystick-ring"></div><div id="knob" class="joystick-knob"></div></div>
+        </div>
+          <button id="nextScene" class="scene-switch-button next" type="button" aria-label="切换到下一张场景" title="下一张场景">›</button>
         </div>
         <p id="movementHelp" class="stage-help">在地图任意位置按住并拖动即可移动角色，松手停止</p>
       </section>
@@ -132,6 +136,6 @@
 </main>
 <div id="dropOverlay" class="drop-overlay" aria-hidden="true"><div><b id="dropTitle">松开上传地图</b><span id="dropDescription">拖到手机地图画布内可添加为建筑</span></div></div>
   <script src="./spine-player.js?v=20260730-3"></script>
-<script src="./app.js?v=20260824-1"></script>
+<script src="./app.js?v=20260826-1"></script>
 </body>
 </html>

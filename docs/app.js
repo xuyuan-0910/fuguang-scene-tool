@@ -445,6 +445,7 @@ function renderExplorer() {
   renderBuildings();
   renderCamera();
   renderSideMaps(); renderCharacters(); renderSkills(); renderControlMode();
+  renderSceneSwitchButtons();
   renderExplorationMode();
   refreshHighResolutionRendering();
 }
@@ -459,6 +460,35 @@ function enterMap(id) {
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
+
+function orderedSceneMaps() {
+  return newestMapsFirst(state.maps);
+}
+
+function renderSceneSwitchButtons() {
+  const maps = orderedSceneMaps();
+  const currentIndex = Math.max(0, maps.findIndex((map) => map.id === state.mapId));
+  const previous = maps[(currentIndex - 1 + maps.length) % maps.length];
+  const next = maps[(currentIndex + 1) % maps.length];
+  const disabled = maps.length < 2;
+  [$("previousScene"), $("nextScene")].forEach((button) => { button.disabled = disabled; });
+  $("previousScene").setAttribute("aria-label", disabled ? "没有上一张场景" : `切换到上一张场景：${previous.name}`);
+  $("previousScene").title = disabled ? "没有其他场景" : `上一张：${previous.name}`;
+  $("nextScene").setAttribute("aria-label", disabled ? "没有下一张场景" : `切换到下一张场景：${next.name}`);
+  $("nextScene").title = disabled ? "没有其他场景" : `下一张：${next.name}`;
+}
+
+function switchScene(direction) {
+  const maps = orderedSceneMaps();
+  if (maps.length < 2) return;
+  const currentIndex = Math.max(0, maps.findIndex((map) => map.id === state.mapId));
+  const nextIndex = (currentIndex + direction + maps.length) % maps.length;
+  stopCharacterMovement();
+  selectedBuildingId = null;
+  state.mapId = maps[nextIndex].id;
+  saveSceneSettings();
+  renderExplorer();
+}
 function goHome() {
   explorationMode = false;
   renderExplorationMode();
@@ -809,6 +839,8 @@ function updateStick(event) {
 function bindEvents() {
   $("mapGallery").onclick = (event) => { const remove = event.target.closest("[data-delete-map]"); if (remove) { event.stopPropagation(); deleteMap(remove.dataset.deleteMap); return; } const card = event.target.closest("[data-map-id]"); if (card) enterMap(card.dataset.mapId); };
   $("sideMapList").onclick = (event) => { const remove = event.target.closest("[data-delete-map]"); if (remove) { event.stopPropagation(); deleteMap(remove.dataset.deleteMap); return; } const card = event.target.closest("[data-map-id]"); if (card) { state.mapId = card.dataset.mapId; saveSceneSettings(); renderExplorer(); } };
+  $("previousScene").onclick = () => switchScene(-1);
+  $("nextScene").onclick = () => switchScene(1);
   $("characterList").onclick = (event) => {
     const remove = event.target.closest("[data-delete-character]");
     if (remove) { event.stopPropagation(); deleteCharacter(remove.dataset.deleteCharacter); return; }
